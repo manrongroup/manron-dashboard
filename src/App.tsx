@@ -6,9 +6,14 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { DashboardLayout } from "@/components/DashboardLayout";
-import Dashboard from "./pages/Dashboard";
-import Login from "./pages/Login";
-import NotFound from "./pages/NotFound";
+import Login from '@/pages/Login';
+import Dashboard from '@/pages/Dashboard';
+import BlogManagement from '@/pages/BlogManagement';
+import RealEstateManagement from '@/pages/RealEstateManagement';
+import ContactsManagement from '@/pages/ContactsManagement';
+import SubscribersManagement from '@/pages/SubscribersManagement';
+import EmailManagement from '@/pages/EmailManagement';
+import NotFound from '@/pages/NotFound';
 
 const queryClient = new QueryClient();
 
@@ -36,10 +41,7 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <DashboardLayout>
-                    <div className="p-8 text-center">
-                      <h1 className="text-2xl font-bold">Blog Management</h1>
-                      <p className="text-muted-foreground mt-2">Coming soon...</p>
-                    </div>
+                    <BlogManagement />
                   </DashboardLayout>
                 </ProtectedRoute>
               } 
@@ -49,10 +51,7 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <DashboardLayout>
-                    <div className="p-8 text-center">
-                      <h1 className="text-2xl font-bold">Real Estate Management</h1>
-                      <p className="text-muted-foreground mt-2">Coming soon...</p>
-                    </div>
+                    <RealEstateManagement />
                   </DashboardLayout>
                 </ProtectedRoute>
               } 
@@ -62,10 +61,7 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <DashboardLayout>
-                    <div className="p-8 text-center">
-                      <h1 className="text-2xl font-bold">Contact Management</h1>
-                      <p className="text-muted-foreground mt-2">Coming soon...</p>
-                    </div>
+                    <ContactsManagement />
                   </DashboardLayout>
                 </ProtectedRoute>
               } 
@@ -75,10 +71,7 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <DashboardLayout>
-                    <div className="p-8 text-center">
-                      <h1 className="text-2xl font-bold">Subscriber Management</h1>
-                      <p className="text-muted-foreground mt-2">Coming soon...</p>
-                    </div>
+                    <SubscribersManagement />
                   </DashboardLayout>
                 </ProtectedRoute>
               } 
@@ -88,10 +81,7 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <DashboardLayout>
-                    <div className="p-8 text-center">
-                      <h1 className="text-2xl font-bold">Email Center</h1>
-                      <p className="text-muted-foreground mt-2">Coming soon...</p>
-                    </div>
+                    <EmailManagement />
                   </DashboardLayout>
                 </ProtectedRoute>
               } 
