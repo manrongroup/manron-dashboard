@@ -13,6 +13,9 @@ import RealEstateManagement from '@/pages/RealEstateManagement';
 import ContactsManagement from '@/pages/ContactsManagement';
 import SubscribersManagement from '@/pages/SubscribersManagement';
 import EmailManagement from '@/pages/EmailManagement';
+import WebsiteManagement from '@/pages/WebsiteManagement';
+import UserManagement from '@/pages/UserManagement';
+import Analytics from '@/pages/Analytics';
 import NotFound from '@/pages/NotFound';
 
 const queryClient = new QueryClient();
@@ -87,12 +90,42 @@ const App = () => (
               } 
             />
             <Route 
+              path="/websites" 
+              element={
+                <ProtectedRoute>
+                  <DashboardLayout>
+                    <WebsiteManagement />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/analytics" 
+              element={
+                <ProtectedRoute>
+                  <DashboardLayout>
+                    <Analytics />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
               path="/users" 
               element={
                 <ProtectedRoute requiredPermission="manage_users">
                   <DashboardLayout>
+                    <UserManagement />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/settings" 
+              element={
+                <ProtectedRoute>
+                  <DashboardLayout>
                     <div className="p-8 text-center">
-                      <h1 className="text-2xl font-bold">User Management</h1>
+                      <h1 className="text-2xl font-bold">Settings</h1>
                       <p className="text-muted-foreground mt-2">Coming soon...</p>
                     </div>
                   </DashboardLayout>
