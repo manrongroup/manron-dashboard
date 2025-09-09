@@ -3,7 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { AppProviders } from "@/contexts/AppProviders";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import Login from '@/pages/Login';
@@ -23,104 +23,104 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <AuthProvider>
+      <AppProviders>
         <Toaster />
         <Sonner />
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<Login />} />
-            <Route 
-              path="/" 
+            <Route
+              path="/"
               element={
                 <ProtectedRoute>
                   <DashboardLayout>
                     <Dashboard />
                   </DashboardLayout>
                 </ProtectedRoute>
-              } 
+              }
             />
-            <Route 
-              path="/blogs" 
+            <Route
+              path="/blogs"
               element={
                 <ProtectedRoute>
                   <DashboardLayout>
                     <BlogManagement />
                   </DashboardLayout>
                 </ProtectedRoute>
-              } 
+              }
             />
-            <Route 
-              path="/real-estate" 
+            <Route
+              path="/real-estate"
               element={
                 <ProtectedRoute>
                   <DashboardLayout>
                     <RealEstateManagement />
                   </DashboardLayout>
                 </ProtectedRoute>
-              } 
+              }
             />
-            <Route 
-              path="/contacts" 
+            <Route
+              path="/contacts"
               element={
                 <ProtectedRoute>
                   <DashboardLayout>
                     <ContactsManagement />
                   </DashboardLayout>
                 </ProtectedRoute>
-              } 
+              }
             />
-            <Route 
-              path="/subscribers" 
+            <Route
+              path="/subscribers"
               element={
                 <ProtectedRoute>
                   <DashboardLayout>
                     <SubscribersManagement />
                   </DashboardLayout>
                 </ProtectedRoute>
-              } 
+              }
             />
-            <Route 
-              path="/emails" 
+            <Route
+              path="/emails"
               element={
                 <ProtectedRoute>
                   <DashboardLayout>
                     <EmailManagement />
                   </DashboardLayout>
                 </ProtectedRoute>
-              } 
+              }
             />
-            <Route 
-              path="/websites" 
+            <Route
+              path="/websites"
               element={
                 <ProtectedRoute>
                   <DashboardLayout>
                     <WebsiteManagement />
                   </DashboardLayout>
                 </ProtectedRoute>
-              } 
+              }
             />
-            <Route 
-              path="/analytics" 
+            <Route
+              path="/analytics"
               element={
                 <ProtectedRoute>
                   <DashboardLayout>
                     <Analytics />
                   </DashboardLayout>
                 </ProtectedRoute>
-              } 
+              }
             />
-            <Route 
-              path="/users" 
+            <Route
+              path="/users"
               element={
                 <ProtectedRoute requiredPermission="manage_users">
                   <DashboardLayout>
                     <UserManagement />
                   </DashboardLayout>
                 </ProtectedRoute>
-              } 
+              }
             />
-            <Route 
-              path="/settings" 
+            <Route
+              path="/settings"
               element={
                 <ProtectedRoute>
                   <DashboardLayout>
@@ -130,13 +130,13 @@ const App = () => (
                     </div>
                   </DashboardLayout>
                 </ProtectedRoute>
-              } 
+              }
             />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
-      </AuthProvider>
+      </AppProviders>
     </TooltipProvider>
   </QueryClientProvider>
 );

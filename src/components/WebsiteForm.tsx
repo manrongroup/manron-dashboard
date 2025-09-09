@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Website } from '@/types';
-import api from '@/lib/api';
+import { api } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 
 const websiteSchema = z.object({
@@ -28,7 +28,7 @@ interface WebsiteFormProps {
 
 export function WebsiteForm({ website, onSuccess }: WebsiteFormProps) {
   const { toast } = useToast();
-  
+
   const form = useForm<WebsiteFormData>({
     resolver: zodResolver(websiteSchema),
     defaultValues: {
@@ -152,10 +152,10 @@ export function WebsiteForm({ website, onSuccess }: WebsiteFormProps) {
             <FormItem>
               <FormLabel>Description</FormLabel>
               <FormControl>
-                <Textarea 
+                <Textarea
                   placeholder="Enter website description"
                   className="min-h-[100px]"
-                  {...field} 
+                  {...field}
                 />
               </FormControl>
               <FormMessage />

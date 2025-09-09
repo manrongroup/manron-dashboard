@@ -9,7 +9,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Plus, Search, Globe, Edit, Trash2, Eye } from 'lucide-react';
 import { Website } from '@/types';
 import { WebsiteForm } from '@/components/WebsiteForm';
-import api from '@/lib/api';
+import { api } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 
 export default function WebsiteManagement() {
@@ -130,7 +130,7 @@ export default function WebsiteManagement() {
             Manage all your websites and their configurations
           </p>
         </div>
-        
+
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
             <Button className="shadow-elegant hover:shadow-glow transition-all duration-300">
@@ -142,7 +142,7 @@ export default function WebsiteManagement() {
             <DialogHeader>
               <DialogTitle>Create New Website</DialogTitle>
             </DialogHeader>
-            <WebsiteForm 
+            <WebsiteForm
               onSuccess={() => {
                 setIsCreateDialogOpen(false);
                 fetchWebsites();
@@ -266,7 +266,7 @@ export default function WebsiteManagement() {
             <DialogTitle>Edit Website</DialogTitle>
           </DialogHeader>
           {selectedWebsite && (
-            <WebsiteForm 
+            <WebsiteForm
               website={selectedWebsite}
               onSuccess={() => {
                 setIsEditDialogOpen(false);
@@ -289,7 +289,7 @@ export default function WebsiteManagement() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={() => deleteWebsite && handleDelete(deleteWebsite)}
               className="bg-destructive hover:bg-destructive/90"
             >

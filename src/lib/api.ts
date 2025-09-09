@@ -1,40 +1,44 @@
 import axios from 'axios';
 
-// Create axios instance with base configuration
+const BASE_URL = 'http://localhost:6060/api/v1';
+
+// Create axios instances with base configuration
 const api = axios.create({
-  baseURL: 'http://localhost:6060/api/v1',
+  baseURL: BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+const realEstateApi = axios.create({
+  baseURL: `${BASE_URL}/realestate`,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
 // Request interceptor to add auth token
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
+const addAuthToken = (config: any) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
-);
+  return config;
+};
 
-// Response interceptor to handle errors
-api.interceptors.response.use(
-  (response) => {
-    return response;
-  },
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
-    }
-    return Promise.reject(error);
+const errorHandler = (error: any) => {
+  if (error.response?.status === 401) {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    window.location.href = '/login';
   }
-);
+  return Promise.reject(error);
+};
 
-export default api;
+// Add interceptors to both instances
+[api, realEstateApi].forEach(instance => {
+  instance.interceptors.request.use(addAuthToken, (error) => Promise.reject(error));
+  instance.interceptors.response.use((response) => response, errorHandler);
+});
+
+export { api, realEstateApi };

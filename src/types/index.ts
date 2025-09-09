@@ -21,7 +21,7 @@ export interface Blog {
   readTime: string;
   featured: boolean;
   image: string;
-  images: string[];
+  images?: string[];
   createdAt: string;
   updatedAt: string;
 }

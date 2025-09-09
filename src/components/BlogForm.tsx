@@ -27,8 +27,8 @@ import { Badge } from '@/components/ui/badge';
 import { X, Plus, Upload } from 'lucide-react';
 import RichTextEditor from './RichTextEditor';
 import { Blog } from '@/types';
-import api from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
+import { api } from '@/lib/api';
 
 const blogSchema = z.object({
   title: z.string().min(1, 'Title is required'),

@@ -9,7 +9,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Plus, Search, User, Edit, Trash2, Shield } from 'lucide-react';
 import { User as UserType } from '@/types';
 import { UserForm } from '@/components/UserForm';
-import api from '@/lib/api';
+import { api } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -136,7 +136,7 @@ export default function UserManagement() {
             Manage system users and their roles
           </p>
         </div>
-        
+
         {currentUser?.role === 'superAdmin' && (
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
@@ -149,7 +149,7 @@ export default function UserManagement() {
               <DialogHeader>
                 <DialogTitle>Create New User</DialogTitle>
               </DialogHeader>
-              <UserForm 
+              <UserForm
                 onSuccess={() => {
                   setIsCreateDialogOpen(false);
                   fetchUsers();
@@ -270,7 +270,7 @@ export default function UserManagement() {
             <DialogTitle>Edit User</DialogTitle>
           </DialogHeader>
           {selectedUser && (
-            <UserForm 
+            <UserForm
               user={selectedUser}
               onSuccess={() => {
                 setIsEditDialogOpen(false);
@@ -293,7 +293,7 @@ export default function UserManagement() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={() => deleteUser && handleDelete(deleteUser)}
               className="bg-destructive hover:bg-destructive/90"
             >

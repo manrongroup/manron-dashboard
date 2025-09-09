@@ -7,6 +7,7 @@ interface StatCardProps {
   title: string;
   value: string | number;
   description?: string;
+  loading?: boolean;
   icon: LucideIcon;
   trend?: {
     value: number;
@@ -23,6 +24,7 @@ const StatCard: React.FC<StatCardProps> = ({
   icon: Icon,
   trend,
   className,
+  loading,
   variant = 'default'
 }) => {
   const variantStyles = {

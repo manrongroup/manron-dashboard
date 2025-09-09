@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { EmailForm } from '@/components/EmailForm';
 import { useAuth } from '@/contexts/AuthContext';
 import { EmailTemplate } from '@/types';
-import api from '@/lib/api';
+import { api } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
 import StatCard from '@/components/ui/stat-card';
 
@@ -268,8 +268,8 @@ export default function EmailManagement() {
                               <>
                                 <Dialog>
                                   <DialogTrigger asChild>
-                                    <Button 
-                                      variant="ghost" 
+                                    <Button
+                                      variant="ghost"
                                       size="sm"
                                       onClick={() => setEditingTemplate(template)}
                                     >
@@ -386,7 +386,7 @@ export default function EmailManagement() {
                 >
                   Clear
                 </Button>
-                <Button 
+                <Button
                   onClick={handleBulkEmail}
                   disabled={bulkEmailLoading || !bulkEmailSubject.trim() || !bulkEmailMessage.trim()}
                 >

@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { User } from '@/types';
-import api from '@/lib/api';
+import { api } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 
 const userSchema = z.object({
@@ -26,7 +26,7 @@ interface UserFormProps {
 
 export function UserForm({ user, onSuccess }: UserFormProps) {
   const { toast } = useToast();
-  
+
   const form = useForm<UserFormData>({
     resolver: zodResolver(userSchema),
     defaultValues: {
@@ -93,10 +93,10 @@ export function UserForm({ user, onSuccess }: UserFormProps) {
               <FormItem>
                 <FormLabel>Email</FormLabel>
                 <FormControl>
-                  <Input 
-                    type="email" 
-                    placeholder="Enter email address" 
-                    {...field} 
+                  <Input
+                    type="email"
+                    placeholder="Enter email address"
+                    {...field}
                   />
                 </FormControl>
                 <FormMessage />
@@ -137,10 +137,10 @@ export function UserForm({ user, onSuccess }: UserFormProps) {
                   Password {user ? '(leave empty to keep current)' : ''}
                 </FormLabel>
                 <FormControl>
-                  <Input 
-                    type="password" 
+                  <Input
+                    type="password"
                     placeholder={user ? "Enter new password" : "Enter password"}
-                    {...field} 
+                    {...field}
                   />
                 </FormControl>
                 <FormMessage />

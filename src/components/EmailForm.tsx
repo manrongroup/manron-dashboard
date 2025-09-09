@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Mail, FileText, Send } from 'lucide-react';
 import RichTextEditor from '@/components/RichTextEditor';
 import { EmailTemplate } from '@/types';
-import api from '@/lib/api';
+import { api } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
 
 const emailTemplateSchema = z.object({
@@ -166,10 +166,10 @@ export function EmailForm({ template, onSubmit, onCancel }: EmailFormProps) {
               </div>
               <div>
                 <p className="text-sm font-medium text-muted-foreground mb-2">Content:</p>
-                <div 
+                <div
                   className="prose prose-sm max-w-none"
-                  dangerouslySetInnerHTML={{ 
-                    __html: watchedContent || '<p class="text-muted-foreground">No content entered</p>' 
+                  dangerouslySetInnerHTML={{
+                    __html: watchedContent || '<p class="text-muted-foreground">No content entered</p>'
                   }}
                 />
               </div>

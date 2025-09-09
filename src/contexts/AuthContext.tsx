@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User } from '@/types';
-import api from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
+import { api } from '@/lib/api';
 
 interface AuthContextType {
   user: User | null;
@@ -47,33 +47,34 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setIsLoading(false);
   }, []);
 
-  const login = async (email: string, password: string) => {
-    try {
-      setIsLoading(true);
-      const response = await api.post('/auth/login', { email, password });
-      
-      const { token, user: userData } = response.data.data;
-      
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(userData));
-      setUser(userData);
-      
-      toast({
-        title: 'Success',
-        description: 'Logged in successfully',
-      });
-    } catch (error: any) {
-      const message = error.response?.data?.message || 'Login failed';
-      toast({
-        title: 'Error',
-        description: message,
-        variant: 'destructive',
-      });
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  };
+const login = async (email: string, password: string) => {
+  try {
+    setIsLoading(true);
+    const response = await api.post('/login', { email, password });
+
+    // FIXED: no `.data.data`, just `.data`
+    const { token, user: userData } = response.data;
+
+    localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(userData));
+    setUser(userData);
+
+    toast({
+      title: 'Success',
+      description: 'Logged in successfully',
+    });
+  } catch (error: any) {
+    const message = error.response?.data?.message || 'Login failed';
+    toast({
+      title: 'Error',
+      description: message,
+      variant: 'destructive',
+    });
+    throw error;
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const logout = () => {
     localStorage.removeItem('token');
