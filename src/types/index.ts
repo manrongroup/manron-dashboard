@@ -1,9 +1,11 @@
 export interface User {
+  _id:string;
   id: string;
   email: string;
-  role: 'superAdmin' | 'admin' | 'worker' | 'user';
-  name?: string;
+  role: 'superAdmin' | 'admin' | 'worker' | 'user' | 'agent';
+  fullname?: string;
   avatar?: string;
+  telephone?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -67,7 +69,7 @@ export interface Subscriber {
   name?: string;
   website: string;
   status: 'active' | 'inactive';
-  subscribedAt: string;
+  createdAt: string;
   categories: string[];
 }
 

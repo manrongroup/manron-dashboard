@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Plus, Edit, Trash2 } from "lucide-react";
 import { DataTable } from "../ui/data-table";
 import { Property } from "@/types/realEstate";
+import { RealEstate } from "@/types";
 
     
 interface RealEstateTableProps {
@@ -142,6 +143,11 @@ const RealEstateTable: React.FC<RealEstateTableProps> = ({
             header: "Furnished",
             cell: ({ row }: any) => <div>{row.getValue("furnished") ? "Yes" : "No"}</div>,
         },
+            {
+            accessorKey: "likes",
+            header: "Likes",
+            cell: ({ row }: any) => <div>{row.getValue("likes")}</div>,
+        },
         {
             accessorKey: "isDeal",
             header: "Deal Type",
@@ -168,7 +174,7 @@ const RealEstateTable: React.FC<RealEstateTableProps> = ({
                 const property = row.original as RealEstate;
                 return (
                     <div className="flex items-center space-x-2">
-                        <Button variant="ghost" size="sm" onClick={() => onEdit(property)}>
+                        <Button variant="ghost" size="sm" onClick={() => onEdit(property as any)}>
                             <Edit className="h-4 w-4 mr-1" /> Edit
                         </Button>
                         <Button
@@ -188,7 +194,7 @@ const RealEstateTable: React.FC<RealEstateTableProps> = ({
     ];
 
     return (
-        <div className="max-w-full overflow-auto md:max-w-[600px] lg:max-w-[700px] xl:max-w-[1000px] 2xl:max-w-full mx-auto">
+        <div className='max-w-full  md:max-w-[600px]  xl:max-w-[1200px] 2xl:max-w-full mx-auto p-4'>
             <DataTable
                 columns={columns}
                 data={properties}

@@ -1,20 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Users, Mail, Globe, Trash2, Send, Download } from 'lucide-react';
+import { Users, Mail, Globe, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
 import { useAuth } from '@/contexts/AuthContext';
 import { Subscriber } from '@/types';
 import { api } from '@/lib/api';
 import StatCard from '@/components/ui/stat-card';
 import SubscribersTable from '@/components/tables/SubscribeTable';
 import { toast } from 'sonner';
+import RichTextEditor from '@/components/RichTextEditor';
 
 export default function SubscribersManagement() {
   const { hasPermission } = useAuth();
@@ -56,7 +52,7 @@ export default function SubscribersManagement() {
     }
   };
 
-  const handleBulkEmail = async () => {
+  const handleSendEmail = async () => {
     if (!emailMessage.trim() || !emailSubject.trim()) {
       toast.error('Please enter both subject and message');
       return;
@@ -65,21 +61,25 @@ export default function SubscribersManagement() {
     setEmailLoading(true);
     try {
       if (selectedSubscribers.length > 0) {
-        // Send to selected subscribers
-        await api.post('/emails/bulk', {
-          subscriberIds: selectedSubscribers,
-          subject: emailSubject,
-          message: emailMessage,
-        });
+        // Send one by one to selected subscribers
+        await Promise.all(
+          selectedSubscribers.map(id =>
+            api.post(`/emails/${id}`, {
+              subject: emailSubject,
+              message: emailMessage,
+            })
+          )
+        );
+        toast.success(`Email sent to ${selectedSubscribers.length} subscriber(s)`);
       } else {
-        // Send to all active subscribers
-        await api.post('/emailsnewsletter', {
+        // Send to ALL (backend handles companies, interns, etc.)
+        await api.post('/emails', {
           subject: emailSubject,
           message: emailMessage,
         });
+        toast.success('Email sent to all subscribers successfully');
       }
 
-      toast.success(`Email(s) sent to ${selectedSubscribers.length > 0 ? selectedSubscribers.length : 'all'} subscribers successfully`);
       setIsEmailDialogOpen(false);
       setEmailMessage('');
       setEmailSubject('');
@@ -91,33 +91,20 @@ export default function SubscribersManagement() {
     }
   };
 
-
-  const handleSelectSubscriber = (id: string) => {
+  const handleSelectSubscriber = (subscriber:any) => {
     setSelectedSubscribers(prev =>
-      prev.includes(id)
-        ? prev.filter(subId => subId !== id)
-        : [...prev, id]
+      prev.includes(subscriber._id) ? prev.filter(subId => subId !== subscriber._id) : [...prev, subscriber._id]
     );
   };
 
-  // const handleSelectAll = (checked: boolean) => {
-  //   if (checked) {
-  //     setSelectedSubscribers(filteredSubscribers.map(sub => sub._id));
-  //   } else {
-  //     setSelectedSubscribers([]);
-  //   }
-  // };
-
   const filteredSubscribers = subscribers.filter((subscriber) => {
-    const matchesSearch = subscriber.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesSearch =
+      subscriber.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (subscriber.name && subscriber.name.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesStatus = statusFilter === 'all' || subscriber.status === statusFilter;
     const matchesWebsite = websiteFilter === 'all' || subscriber.website === websiteFilter;
     return matchesSearch && matchesStatus && matchesWebsite;
   });
-
-  console.log("Filtered Subscribers:", filteredSubscribers);
-  console.log("All Subscribers:", subscribers);
 
   const stats = {
     total: subscribers.length,
@@ -128,9 +115,6 @@ export default function SubscribersManagement() {
       new Date(s.createdAt).getFullYear() === new Date().getFullYear()
     ).length,
   };
-
-
-  const uniqueWebsites = [...new Set(subscribers.map(s => s.website))];
 
   if (loading) {
     return (
@@ -148,7 +132,6 @@ export default function SubscribersManagement() {
           <p className="text-muted-foreground">Manage newsletter subscribers from all websites</p>
         </div>
         <div className="flex gap-2">
-        
           {hasPermission('manage_content') && (
             <Dialog open={isEmailDialogOpen} onOpenChange={setIsEmailDialogOpen}>
               <DialogTrigger asChild>
@@ -157,13 +140,12 @@ export default function SubscribersManagement() {
                   Send Email
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl">
+              <DialogContent className="max-w-3xl">
                 <DialogHeader>
                   <DialogTitle>
                     Send Email to {selectedSubscribers.length > 0
                       ? `${selectedSubscribers.length} Selected Subscribers`
-                      : 'All Active Subscribers'
-                    }
+                      : 'All Subscribers'}
                   </DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
@@ -175,20 +157,20 @@ export default function SubscribersManagement() {
                       onChange={(e) => setEmailSubject(e.target.value)}
                     />
                   </div>
-                  <div>
+                  <div className=' p-5'>
                     <label className="text-sm font-medium mb-2 block">Message</label>
-                    <Textarea
-                      placeholder="Enter your email message..."
+                    <RichTextEditor
                       value={emailMessage}
-                      onChange={(e) => setEmailMessage(e.target.value)}
-                      rows={8}
+                      onChange={setEmailMessage}
+                      placeholder="Write your email..."
+                      height="250px"
                     />
                   </div>
                   <div className="flex justify-end gap-2">
                     <Button variant="outline" onClick={() => setIsEmailDialogOpen(false)}>
                       Cancel
                     </Button>
-                    <Button onClick={handleBulkEmail} disabled={emailLoading}>
+                    <Button onClick={handleSendEmail} disabled={emailLoading}>
                       {emailLoading ? 'Sending...' : 'Send Email'}
                     </Button>
                   </div>
@@ -200,30 +182,10 @@ export default function SubscribersManagement() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <StatCard
-          title="Total Subscribers"
-          value={stats.total}
-          icon={Users}
-          trend={{ value: 0, isPositive: false }}
-        />
-        <StatCard
-          title="Active Subscribers"
-          value={stats.active}
-          icon={Mail}
-          trend={{ value: 0, isPositive: false }}
-        />
-        <StatCard
-          title="Inactive Subscribers"
-          value={stats.inactive}
-          icon={Users}
-          trend={{ value: 0, isPositive: false }}
-        />
-        <StatCard
-          title="This Month"
-          value={stats.thisMonth}
-          icon={Globe}
-          trend={{ value: 0, isPositive: true }}
-        />
+        <StatCard title="Total Subscribers" value={stats.total} icon={Users} trend={{ value: 0, isPositive: false }} />
+        <StatCard title="Active Subscribers" value={stats.active} icon={Mail} trend={{ value: 0, isPositive: false }} />
+        <StatCard title="Inactive Subscribers" value={stats.inactive} icon={Users} trend={{ value: 0, isPositive: false }} />
+        <StatCard title="This Month" value={stats.thisMonth} icon={Globe} trend={{ value: 0, isPositive: true }} />
       </div>
 
       <SubscribersTable
@@ -231,7 +193,6 @@ export default function SubscribersManagement() {
         onDelete={handleDelete}
         onEdit={handleSelectSubscriber}
       />
-
     </div>
   );
 }

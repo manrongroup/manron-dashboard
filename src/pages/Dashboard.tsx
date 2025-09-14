@@ -13,11 +13,18 @@ import StatCard from '@/components/ui/stat-card';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import api from '@/lib/api';
 import { Statistics, ActivityItem } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate, useRouteError } from 'react-router-dom';
 
 export default function Dashboard() {
+  const navigate = useNavigate()
+
+  const handleNavigate = (path: string) => {
+    navigate(path)
+    window.scrollTo({ top: 0, behavior: "smooth" })
+  }
+
   const { user } = useAuth();
   const [stats, setStats] = useState<Statistics>({
     totalBlogs: 0,
@@ -98,20 +105,22 @@ export default function Dashboard() {
     }
   };
 
+
+
   return (
     <div className="space-y-6">
       {/* Welcome Section */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            Welcome back, {user?.name || user?.email}!
+            Welcome back, {user?.fullname || user?.email}!
           </h1>
           <p className="text-muted-foreground mt-2">
             Here's what's happening across your websites today.
           </p>
         </div>
         <div className="flex gap-2">
-          <Button className="bg-gradient-to-r from-primary to-accent hover:from-primary-dark hover:to-primary">
+          <Button onClick={() => handleNavigate('/analytics')} className="bg-gradient-to-r from-primary to-accent hover:from-primary-dark hover:to-primary">
             <TrendingUp className="mr-2 h-4 w-4" />
             View Analytics
           </Button>
@@ -172,19 +181,38 @@ export default function Dashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
-            <Button variant="outline" className="w-full justify-start">
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              onClick={() => handleNavigate("/blogs")}
+            >
               <FileText className="mr-2 h-4 w-4" />
               Create New Blog
             </Button>
-            <Button variant="outline" className="w-full justify-start">
+
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              onClick={() => handleNavigate("/real-estate")}
+            >
               <Building className="mr-2 h-4 w-4" />
               Add Property
             </Button>
-            <Button variant="outline" className="w-full justify-start">
+
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              onClick={() => handleNavigate("/emails")}
+            >
               <MessageSquare className="mr-2 h-4 w-4" />
               Email Blast
             </Button>
-            <Button variant="outline" className="w-full justify-start">
+
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              onClick={() => handleNavigate("/users")}
+            >
               <Users className="mr-2 h-4 w-4" />
               Manage Users
             </Button>
@@ -214,8 +242,8 @@ export default function Dashboard() {
                         <span>by {activity.user}</span>
                         <span>•</span>
                         <span>{new Date(activity.timestamp).toLocaleTimeString()}</span>
-                        <Badge 
-                          variant="secondary" 
+                        <Badge
+                          variant="secondary"
                           className={`${getActivityColor(activity.type)} text-xs`}
                         >
                           {activity.type}
@@ -248,9 +276,8 @@ export default function Dashboard() {
               ].map((site, index) => (
                 <div key={index} className="p-4 border rounded-lg space-y-2">
                   <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${
-                      site.status === 'active' ? 'bg-green-500' : 'bg-yellow-500'
-                    }`} />
+                    <div className={`w-2 h-2 rounded-full ${site.status === 'active' ? 'bg-green-500' : 'bg-yellow-500'
+                      }`} />
                     <span className="text-sm font-medium">{site.name}</span>
                   </div>
                   <p className="text-xs text-muted-foreground capitalize">{site.type}</p>

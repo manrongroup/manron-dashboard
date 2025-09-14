@@ -49,6 +49,8 @@ interface BlogFormProps {
   onSuccess: () => void;
 }
 
+export const blogCategories = ["tips", "news", "projects", "sustainability", "technology"];
+export const blogTypes = ["construction", "realestate", "logistic", "tech", "all"];
 const BlogForm: React.FC<BlogFormProps> = ({ blog, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [tags, setTags] = useState<string[]>(blog?.tags || []);
@@ -87,7 +89,7 @@ const BlogForm: React.FC<BlogFormProps> = ({ blog, onSuccess }) => {
   const onSubmit = async (data: BlogFormData) => {
     try {
       setLoading(true);
-      
+
       const formData = new FormData();
       formData.append('title', data.title);
       formData.append('excerpt', data.excerpt);
@@ -98,7 +100,7 @@ const BlogForm: React.FC<BlogFormProps> = ({ blog, onSuccess }) => {
       formData.append('type', data.type);
       formData.append('readTime', data.readTime);
       formData.append('featured', data.featured.toString());
-      
+
       // Add tags
       tags.forEach(tag => {
         formData.append('tags[]', tag);
@@ -118,10 +120,10 @@ const BlogForm: React.FC<BlogFormProps> = ({ blog, onSuccess }) => {
 
       let endpoint = '/blog';
       let method = 'post';
-      
+
       if (isEditing) {
         endpoint = `/blogs/${blog._id}`;
-        method = 'patch';
+        method = 'put';
       }
 
       const response = await api[method](endpoint, formData, {
@@ -195,10 +197,10 @@ const BlogForm: React.FC<BlogFormProps> = ({ blog, onSuccess }) => {
               <FormItem>
                 <FormLabel>Excerpt</FormLabel>
                 <FormControl>
-                  <Textarea 
-                    placeholder="Enter blog excerpt" 
+                  <Textarea
+                    placeholder="Enter blog excerpt"
                     className="min-h-[100px]"
-                    {...field} 
+                    {...field}
                   />
                 </FormControl>
                 <FormMessage />
@@ -232,18 +234,18 @@ const BlogForm: React.FC<BlogFormProps> = ({ blog, onSuccess }) => {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Type</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select type" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="tech">Tech</SelectItem>
-                      <SelectItem value="real-estate">Real Estate</SelectItem>
-                      <SelectItem value="news">News</SelectItem>
-                      <SelectItem value="lifestyle">Lifestyle</SelectItem>
-                      <SelectItem value="business">Business</SelectItem>
+                      {blogTypes.map((type) => (
+                        <SelectItem key={type} value={type}>
+                          {type.charAt(0).toUpperCase() + type.slice(1)}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -257,14 +259,24 @@ const BlogForm: React.FC<BlogFormProps> = ({ blog, onSuccess }) => {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Category</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter category" {...field} />
-                  </FormControl>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {blogCategories.map((category) => (
+                        <SelectItem key={category} value={category}>
+                          {category.charAt(0).toUpperCase() + category.slice(1)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="readTime"

@@ -165,7 +165,7 @@ const BlogsTable: React.FC<BlogsTableProps> = ({ blogs, onDelete, onEdit }) => {
   ];
 
   return (
-    <div className="max-w-full overflow-auto md:max-w-[600px] lg:max-w-[700px] xl:max-w-[1000px] 2xl:max-w-full mx-auto p-4">
+    <div className="max-w-full h-full min-h-screen   2xl:max-w-full mx-auto p-4">
       <DataTable
         columns={columns}
         data={blogs}

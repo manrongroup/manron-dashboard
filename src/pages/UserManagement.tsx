@@ -1,118 +1,114 @@
-import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Plus, Search, User, Edit, Trash2, Shield } from 'lucide-react';
-import { User as UserType } from '@/types';
-import { UserForm } from '@/components/UserForm';
-import { api } from '@/lib/api';
-import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/contexts/AuthContext';
+"use client";
+
+import React, { useState } from "react";
+import { Plus, Mail, UserCog, UserCheck, Users } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useAuth } from "@/contexts/AuthContext";
+import UsersTable from "@/components/tables/UsersTable";
+import { useEmail } from "@/contexts/EmailContext"; // make sure this exists
+import { UserForm } from "@/components/UserForm";
+import { useToast } from "@/hooks/use-toast";
+import RichTextEditor from "@/components/RichTextEditor";
+import { useUsers } from "@/contexts/UserContext";
+import StatCard from "@/components/ui/stat-card";
 
 export default function UserManagement() {
-  const [users, setUsers] = useState<UserType[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const { users, agents, loading, deleteUser, deleteAgent, fetchUsers, fetchAgents } = useUsers();
+  const { sendToAll, sendToCategory, sendToIndividual } = useEmail();
+  const { user: currentUser } = useAuth();
+  const { toast } = useToast();
+
+  // create/edit dialogs
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<UserType | null>(null);
-  const [deleteUser, setDeleteUser] = useState<UserType | null>(null);
-  const { toast } = useToast();
-  const { user: currentUser } = useAuth();
+  const [selectedUser, setSelectedUser] = useState<any | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
+  // email dialog
+  const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
+  const [emailMode, setEmailMode] = useState<
+    "all" | "agents" | "users_only" | "individual"
+  >("all");
+  const [subject, setSubject] = useState("");
+  const [body, setBody] = useState(""); // HTML from RichTextEditor
+  const [selectedRecipientId, setSelectedRecipientId] = useState<string>(""); // for individual
+  const [sending, setSending] = useState(false);
 
-  const fetchUsers = async () => {
+  // Build a combined list for "individual" selection (users + agents), showing email & id
+  const combined = [
+    ...users.map((u) => ({ id: u.id || u._id, email: u.email, type: "user", raw: u })),
+    ...agents.map((a) => ({ id: a.id || a._id, email: a.email, type: "agent", raw: a })),
+  ];
+
+  // ---------- email sending logic ----------
+  const handleSend = async () => {
+    if (!subject.trim() && !body.trim()) {
+      toast({ title: "Error", description: "Subject or body is required", variant: "destructive" });
+      return;
+    }
+    setSending(true);
     try {
-      const response = await api.get('/users');
-      setUsers(response.data.data || []);
-    } catch (error) {
-      console.error('Error fetching users:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to fetch users',
-        variant: 'destructive',
-      });
-      // Mock data for demonstration
-      setUsers([
-        {
-          id: '1',
-          email: 'super@manron.com',
-          role: 'superAdmin',
-          name: 'Super Admin',
-          avatar: '',
-          createdAt: '2024-01-01T00:00:00Z',
-          updatedAt: '2024-01-01T00:00:00Z'
-        },
-        {
-          id: '2',
-          email: 'admin@manron.com',
-          role: 'admin',
-          name: 'John Admin',
-          avatar: '',
-          createdAt: '2024-01-01T00:00:00Z',
-          updatedAt: '2024-01-01T00:00:00Z'
-        },
-        {
-          id: '3',
-          email: 'worker@manron.com',
-          role: 'worker',
-          name: 'Jane Worker',
-          avatar: '',
-          createdAt: '2024-01-01T00:00:00Z',
-          updatedAt: '2024-01-01T00:00:00Z'
-        }
-      ]);
+      if (emailMode === "all") {
+        // send to all people (backend endpoint that sends to all models)
+        await sendToAll({ subject, message: body });
+      } else if (emailMode === "agents") {
+        // uses category 'agents' which your backend supports
+        await sendToCategory("agents", { subject, message: body });
+      } else if (emailMode === "users_only") {
+        // backend doesn't have a single "users only" endpoint. send individually to each user id.
+        // This will call your /emails/:id endpoint for each user id (your backend finds the user by id in models)
+        await Promise.all(
+          users.map((u) => sendToIndividual(u.id || u._id, { subject, message: body }))
+        );
+      } else if (emailMode === "individual") {
+        if (!selectedRecipientId) throw new Error("Select an individual");
+        await sendToIndividual(selectedRecipientId, { subject, message: body });
+      }
+
+      toast({ title: "Success", description: "Email(s) sent" });
+      setIsEmailDialogOpen(false);
+      setSubject("");
+      setBody("");
+      setSelectedRecipientId("");
+    } catch (err: any) {
+      console.error(err);
+      toast({ title: "Error", description: err?.message || "Failed to send", variant: "destructive" });
     } finally {
-      setLoading(false);
+      setSending(false);
     }
   };
 
-  const handleDelete = async (user: UserType) => {
+  // delete handlers (confirm dialog)
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
     try {
-      await api.delete(`/users/${user.id}`);
-      setUsers(users.filter(u => u.id !== user.id));
-      toast({
-        title: 'Success',
-        description: 'User deleted successfully',
-      });
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to delete user',
-        variant: 'destructive',
-      });
-    }
-    setDeleteUser(null);
-  };
-
-  const filteredUsers = users.filter(user =>
-    user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.role.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const getRoleVariant = (role: string) => {
-    switch (role) {
-      case 'superAdmin': return 'destructive';
-      case 'admin': return 'default';
-      case 'worker': return 'secondary';
-      case 'user': return 'outline';
-      default: return 'outline';
-    }
-  };
-
-  const getRoleIcon = (role: string) => {
-    switch (role) {
-      case 'superAdmin': return <Shield className="h-4 w-4" />;
-      case 'admin': return <User className="h-4 w-4" />;
-      default: return <User className="h-4 w-4" />;
+      if (deleteTarget.type === "agent") {
+        await deleteAgent(deleteTarget.id);
+        await fetchAgents();
+      } else {
+        await deleteUser(deleteTarget.id);
+        await fetchUsers();
+      }
+      setDeleteTarget(null);
+    } catch (err) {
+      // errors are handled in context methods with toasts
     }
   };
 
@@ -125,183 +121,193 @@ export default function UserManagement() {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6">
+
+      {/* Stats */}
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          title="Total Users"
+          value={users.length}
+          icon={Users}
+        />
+        <StatCard
+          title="Total Agents"
+          value={agents.length}
+          icon={UserCheck}
+        />
+        <StatCard
+          title="All Accounts"
+          value={users.length + agents.length}
+          icon={UserCog}
+        />
+        <StatCard
+          title="Average Users per Agent"
+          value={
+            agents.length > 0
+              ? Math.round(users.length / agents.length)
+              : 0
+          }
+          icon={UserCog}
+        />
+
+      </div>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            User Management
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            Manage system users and their roles
-          </p>
+          <h1 className="text-3xl font-bold">User & Agent Management</h1>
+          <p className="text-muted-foreground mt-2">Users, Agents, and Emailing</p>
         </div>
 
-        {currentUser?.role === 'superAdmin' && (
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="shadow-elegant hover:shadow-glow transition-all duration-300">
-                <Plus className="h-4 w-4 mr-2" />
-                Add User
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Create New User</DialogTitle>
-              </DialogHeader>
-              <UserForm
-                onSuccess={() => {
-                  setIsCreateDialogOpen(false);
-                  fetchUsers();
+        <div className="flex items-center gap-2">
+          {currentUser?.role === "superAdmin" && (
+            <>
+              <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="mr-2 h-4 w-4" /> Add User
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>Create User</DialogTitle>
+                  </DialogHeader>
+                  <UserForm
+                    onSuccess={async () => {
+                      setIsCreateDialogOpen(false);
+                      await fetchUsers();
+                    }}
+                  />
+                </DialogContent>
+              </Dialog>
+
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setEmailMode("all");
+                  setIsEmailDialogOpen(true);
                 }}
-              />
-            </DialogContent>
-          </Dialog>
-        )}
+              >
+                <Mail className="mr-2 h-4 w-4" /> Email All
+              </Button>
+
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setEmailMode("agents");
+                  setIsEmailDialogOpen(true);
+                }}
+              >
+                <Mail className="mr-2 h-4 w-4" /> Email Agents
+              </Button>
+
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setEmailMode("users_only");
+                  setIsEmailDialogOpen(true);
+                }}
+              >
+                <Mail className="mr-2 h-4 w-4" /> Email Users Only
+              </Button>
+            </>
+          )}
+        </div>
       </div>
 
-      {/* Filters */}
-      <Card className="border-border/50 shadow-subtle">
-        <CardHeader>
-          <CardTitle className="text-lg">Filters</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search users..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Combined table (users + agents) */}
+      <UsersTable
+        users={[...users, ...agents].map((u) => ({ ...u, id: u.id || u._id }))}
+        onEdit={(u) => {
+          setSelectedUser(u);
+          setIsEditDialogOpen(true);
+        }}
+        onDelete={(u) => {
+          // table must pass user + type (we assume agent objects include a role 'agent')
+          setDeleteTarget({ id: u.id || u._id, type: u.role === "agent" || u.isAgent ? "agent" : "user", email: u.email, fullname: u.fullname });
+        }}
+        onEmail={(u: any) => {
+          setEmailMode("individual");
+          setSelectedRecipientId(u.id || u._id);
+          setIsEmailDialogOpen(true);
+        }}
+      />
 
-      {/* Users Table */}
-      <Card className="border-border/50 shadow-subtle">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <User className="h-5 w-5" />
-            Users ({filteredUsers.length})
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {filteredUsers.length === 0 ? (
-            <div className="text-center py-8">
-              <User className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground">No users found</p>
-            </div>
-          ) : (
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>User</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredUsers.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                            <User className="h-4 w-4 text-primary" />
-                          </div>
-                          <div>
-                            <p className="font-medium">{user.name || 'No name'}</p>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>{user.email}</TableCell>
-                      <TableCell>
-                        <Badge variant={getRoleVariant(user.role)} className="flex items-center gap-1 w-fit">
-                          {getRoleIcon(user.role)}
-                          {user.role}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {new Date(user.createdAt).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {currentUser?.role === 'superAdmin' && (
-                          <div className="flex items-center justify-end gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setSelectedUser(user);
-                                setIsEditDialogOpen(true);
-                              }}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            {user.id !== currentUser.id && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setDeleteUser(user)}
-                              >
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
-                            )}
-                          </div>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Edit Dialog */}
+      {/* Edit user dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Edit User</DialogTitle>
+            <DialogTitle>Edit</DialogTitle>
           </DialogHeader>
           {selectedUser && (
             <UserForm
               user={selectedUser}
-              onSuccess={() => {
+              onSuccess={async () => {
                 setIsEditDialogOpen(false);
-                setSelectedUser(null);
-                fetchUsers();
+                await fetchUsers();
+                await fetchAgents();
               }}
             />
           )}
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation */}
-      <AlertDialog open={!!deleteUser} onOpenChange={() => setDeleteUser(null)}>
+      {/* Delete confirm */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete User</AlertDialogTitle>
+            <AlertDialogTitle>Delete {deleteTarget?.type === "agent" ? "Agent" : "User"}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{deleteUser?.name || deleteUser?.email}"? This action cannot be undone.
+              Are you sure you want to delete "{deleteTarget?.fullname || deleteTarget?.email}"? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => deleteUser && handleDelete(deleteUser)}
-              className="bg-destructive hover:bg-destructive/90"
-            >
+            <AlertDialogAction className="bg-destructive" onClick={confirmDelete}>
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Email dialog */}
+      <Dialog open={isEmailDialogOpen} onOpenChange={() => setIsEmailDialogOpen(false)}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>
+              {emailMode === "individual"
+                ? `Email: ${combined.find((c) => c.id === selectedRecipientId)?.email ?? "Individual"}`
+                : emailMode === "agents"
+                  ? "Email Agents"
+                  : emailMode === "users_only"
+                    ? "Email Users Only"
+                    : "Email All"}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <input
+              className="w-full border rounded p-2"
+              placeholder="Subject"
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+            />
+
+            <RichTextEditor value={body} onChange={setBody} height="300px" />
+
+            <div className="flex gap-2">
+              <Button
+                onClick={handleSend}
+                disabled={sending}
+              >
+                {sending ? "Sending..." : "Send"}
+              </Button>
+              <Button variant="ghost" onClick={() => setIsEmailDialogOpen(false)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

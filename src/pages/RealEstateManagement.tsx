@@ -87,7 +87,7 @@ export default function RealEstateManagement() {
         {hasPermission('manage_content') && (
           <Dialog open={isCreateDialogOpen} onOpenChange={(open) => {
             setIsCreateDialogOpen(open);
-            if (!open) setEditingProperty(null); // 👈 reset when dialog closes
+            if (!open) setEditingProperty(null); 
           }}>
             <DialogTrigger asChild>
               <Button className="flex items-center gap-2">
@@ -103,12 +103,12 @@ export default function RealEstateManagement() {
                 property={editingProperty}
                 onSubmit={() => {
                   setIsCreateDialogOpen(false);
-                  setEditingProperty(null); // 👈 reset after submit
+                  setEditingProperty(null); 
                   fetchRealEstate();
                 }}
                 onCancel={() => {
                   setIsCreateDialogOpen(false);
-                  setEditingProperty(null); // 👈 reset on cancel
+                  setEditingProperty(null);
                 }}
               />
             </DialogContent>

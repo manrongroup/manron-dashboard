@@ -78,7 +78,7 @@ export interface DataTableProps<TData extends Record<string, any>, TValue = any>
     title?: string;
     description?: string;
     className?: string;
-    onRowClick?: (row: Row<TData>) => void;
+    onRowClick?: (row:any) => void;
     onRowSelect?: (selectedRows: TData[]) => void;
     customActions?: CustomAction[];
 }
@@ -755,9 +755,9 @@ const ColumnVisibilityDropdown = <T,>({ table }: ColumnVisibilityDropdownProps<T
                 <div className="p-2">
                     <div className="text-sm font-medium mb-2">Toggle columns</div>
                     {table
-                        .getAllColumns()
-                        .filter(column => column.getCanHide())
-                        .map(column => (
+                        .getAllLeafColumns() // only leaf (actual) columns
+                        .filter((column) => column.getCanHide()) // only those that can hide
+                        .map((column) => (
                             <label key={column.id} className="flex items-center space-x-2 py-1">
                                 <input
                                     type="checkbox"
@@ -766,11 +766,16 @@ const ColumnVisibilityDropdown = <T,>({ table }: ColumnVisibilityDropdownProps<T
                                     className="rounded"
                                 />
                                 <span className="text-sm">
-                                    {(column.columnDef.header as string) || column.id}
+                                    {flexRender(
+                                        column.columnDef.header,
+                                        // create a fake context so flexRender works for header
+                                        { table, header: { id: column.id, column, getContext: () => ({ table, column, header: null as any }) } }
+                                    ) || column.id}
                                 </span>
                             </label>
                         ))}
                 </div>
+
             </DropdownMenuContent>
         </DropdownMenu>
     );

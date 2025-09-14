@@ -248,9 +248,9 @@ export function RealEstateForm({ property, onSubmit, onCancel }: RealEstateFormP
       });
 
       // Agent fields
-      formData.append("name", data.agentName);
-      formData.append("phone", data.agentPhone);
-      formData.append("email", data.agentEmail);
+      formData.append("agent[name]", data.agentName);
+      formData.append("agent[phone]", data.agentPhone);
+      formData.append("agent[email]", data.agentEmail);
 
       // Features
       features.forEach(feature => formData.append("features", feature));
@@ -636,31 +636,33 @@ export function RealEstateForm({ property, onSubmit, onCancel }: RealEstateFormP
                     />
                   </div>
 
-                  <div className="space-y-3">
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="furnished"
-                        {...register('furnished')}
-                      />
-                      <Label htmlFor="furnished">Furnished</Label>
-                    </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="furnished"
+                      checked={watch("furnished")}
+                      onCheckedChange={(checked) => setValue("furnished", checked === true)}
+                    />
+                    <Label htmlFor="furnished">Furnished</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="petsConsidered"
+                      checked={watch("petsConsidered")}
+                      onCheckedChange={(checked) => setValue("petsConsidered", checked === true)}
+                    />
+                    <Label htmlFor="petsConsidered">Pets Considered</Label>
 
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="petsConsidered"
-                        {...register('petsConsidered')}
-                      />
-                      <Label htmlFor="petsConsidered">Pets Considered</Label>
-                    </div>
-
+</div>
                     <div className="flex items-center space-x-2">
                       <Checkbox
                         id="isDeal"
-                        {...register('isDeal')}
+                        checked={watchedIsDeal}
+                        onCheckedChange={(checked) => setValue("isDeal", checked === true)} // update form value
                       />
                       <Label htmlFor="isDeal">Special Deal</Label>
                     </div>
-                  </div>
+
+                  
 
                   {watchedIsDeal && (
                     <div>

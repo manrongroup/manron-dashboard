@@ -43,7 +43,7 @@ const mainNavItems = [
   { title: 'Dashboard', url: '/', icon: LayoutDashboard },
   { title: 'Real Estate', url: '/real-estate', icon: Building },
   { title: 'Blogs', url: '/blogs', icon: FileText },
-  { title: 'Websites', url: '/websites', icon: Globe },
+  // { title: 'Websites', url: '/websites', icon: Globe },
 ];
 
 const managementItems = [
@@ -88,7 +88,7 @@ export function DashboardSidebar() {
 
   return (
     <Sidebar className={cn(
-      'border-r border-border transition-all duration-300',
+      'border-r border-border transition-all duration-300 z-50',
       collapsed ? 'w-16' : 'w-64'
     )}>
       <SidebarHeader className="p-4">

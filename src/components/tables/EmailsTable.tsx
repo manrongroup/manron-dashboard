@@ -2,36 +2,36 @@
 
 import React, { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2 } from "lucide-react";
+import { Eye, Trash2 } from "lucide-react";
 import { DataTable } from "../ui/data-table";
 
-interface Subscriber {
+interface SentEmail {
   _id: string;
-  email: string;
-  status: "active" | "inactive";
+  subject: string;
+  message: string;
+  recipients: string[];
+  status: "sent" | "failed";
+  category: string;
+  sentBy: string;
   createdAt: string;
-  updatedAt?: string;
+  updatedAt: string;
 }
 
-interface SubscribersTableProps {
-  subscribers: Subscriber[];
+interface EmailTableProps {
+  emails: SentEmail[];
   onDelete: (id: string) => void;
-  onEdit: (subscriber: Subscriber) => void;
+  onView: (email: SentEmail) => void;
 }
 
-const SubscribersTable: React.FC<SubscribersTableProps> = ({
-  subscribers,
-  onDelete,
-  onEdit,
-}) => {
-  const [selectedSubs, setSelectedSubs] = useState<Subscriber[]>([]);
+const EmailTable: React.FC<EmailTableProps> = ({ emails, onDelete, onView }) => {
+  const [selectedEmails, setSelectedEmails] = useState<SentEmail[]>([]);
 
-  const handleRowClick = useCallback((row: Subscriber) => {
-    console.log("Subscriber clicked:", row);
+  const handleRowClick = useCallback((row: SentEmail) => {
+    console.log("Email clicked:", row);
   }, []);
 
-  const handleRowSelect = useCallback((rows: Subscriber[]) => {
-    setSelectedSubs(rows);
+  const handleRowSelect = useCallback((rows: SentEmail[]) => {
+    setSelectedEmails(rows);
   }, []);
 
   const columns = [
@@ -60,10 +60,10 @@ const SubscribersTable: React.FC<SubscribersTableProps> = ({
       enableHiding: false,
     },
     {
-      accessorKey: "email",
-      header: "Email",
+      accessorKey: "subject",
+      header: "Subject",
       cell: ({ row }: any) => (
-        <div className="font-medium">{row.getValue("email")}</div>
+        <div className="font-medium">{row.getValue("subject") || "No Subject"}</div>
       ),
     },
     {
@@ -74,9 +74,9 @@ const SubscribersTable: React.FC<SubscribersTableProps> = ({
         return (
           <span
             className={`px-2 py-1 rounded-full text-xs font-medium ${
-              status === "active"
+              status === "sent"
                 ? "bg-green-100 text-green-800"
-                : "bg-gray-100 text-gray-700"
+                : "bg-red-100 text-red-800"
             }`}
           >
             {status}
@@ -85,8 +85,34 @@ const SubscribersTable: React.FC<SubscribersTableProps> = ({
       },
     },
     {
+      accessorKey: "category",
+      header: "Category",
+      cell: ({ row }: any) => (
+        <span className="text-sm">{row.getValue("category")}</span>
+      ),
+    },
+    {
+      accessorKey: "sentBy",
+      header: "Sent By",
+      cell: ({ row }: any) => (
+        <span className="text-sm text-gray-700">{row.getValue("sentBy")}</span>
+      ),
+    },
+    {
+      accessorKey: "recipients",
+      header: "Recipients",
+      cell: ({ row }: any) => {
+        const recipients = row.getValue("recipients") as string[];
+        return (
+          <span className="text-sm text-gray-700">
+            {recipients?.length} recipients
+          </span>
+        );
+      },
+    },
+    {
       accessorKey: "createdAt",
-      header: "Subscribed At",
+      header: "Sent At",
       cell: ({ row }: any) => {
         const date = new Date(row.getValue("createdAt"));
         return date.toLocaleDateString() + " " + date.toLocaleTimeString();
@@ -104,17 +130,17 @@ const SubscribersTable: React.FC<SubscribersTableProps> = ({
       id: "actions",
       header: "Actions",
       cell: ({ row }: any) => {
-        const sub = row.original as Subscriber;
+        const email = row.original as SentEmail;
         return (
           <div className="flex items-center space-x-2">
-            <Button variant="ghost" size="sm" onClick={() => onEdit(sub)}>
-              <Edit className="h-4 w-4 mr-1" /> Edit
+            <Button variant="ghost" size="sm" onClick={() => onView(email)}>
+              <Eye className="h-4 w-4 mr-1" /> View
             </Button>
             <Button
               variant="ghost"
               size="sm"
               className="text-red-600 hover:text-red-700"
-              onClick={() => onDelete(sub._id)}
+              onClick={() => onDelete(email._id)}
             >
               <Trash2 className="h-4 w-4 mr-1" /> Delete
             </Button>
@@ -127,21 +153,21 @@ const SubscribersTable: React.FC<SubscribersTableProps> = ({
   ];
 
   return (
-    <div className='max-w-full   2xl:max-w-full mx-auto p-4'>
+    <div className="max-w-full md:max-w-[800px] lg:max-w-[1000px] xl:max-w-[1200px] 2xl:max-w-full mx-auto p-4">
       <DataTable
         columns={columns}
-        data={subscribers}
+        data={emails}
         filterConfig={{
           enableGlobalFilter: true,
-          searchKey: "email",
-          searchPlaceholder: "Search subscribers...",
+          searchKey: "subject",
+          searchPlaceholder: "Search emails...",
         }}
         enableSorting
         enableRowSelection
         enableColumnVisibility
         enableExport
         exportOptions={{
-          filename: "subscribers_export",
+          filename: "emails_export",
           includeHeaders: true,
           selectedRowsOnly: false,
         }}
@@ -150,22 +176,22 @@ const SubscribersTable: React.FC<SubscribersTableProps> = ({
           pageSize: 5,
           pageSizeOptions: [5, 10, 20, 50],
         }}
-        title="Subscribers"
-        description="Manage newsletter subscribers with filtering, sorting, and export options."
+        title="Sent Emails"
+        description="Manage sent emails with filtering, sorting, and export options."
         onRowClick={handleRowClick}
         onRowSelect={handleRowSelect}
         className="w-full"
       />
 
-      {selectedSubs.length > 0 && (
+      {selectedEmails.length > 0 && (
         <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <h3 className="text-base font-semibold mb-2 text-blue-800">
-            Selected Subscribers ({selectedSubs.length}):
+            Selected Emails ({selectedEmails.length}):
           </h3>
           <div className="space-y-1">
-            {selectedSubs.map((sub) => (
-              <div key={sub._id} className="text-sm text-blue-700">
-                {sub.email} — {sub.status}
+            {selectedEmails.map((email) => (
+              <div key={email._id} className="text-sm text-blue-700">
+                {email.subject || "No Subject"} — {email.status}
               </div>
             ))}
           </div>
@@ -175,4 +201,4 @@ const SubscribersTable: React.FC<SubscribersTableProps> = ({
   );
 };
 
-export default SubscribersTable;
+export default EmailTable;
