@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, FileText, CheckCircle, FileClock, FolderOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import {
@@ -17,6 +17,7 @@ import { Blog } from '@/types/blog';
 import BlogForm from '@/components/BlogForm';
 import { toast } from 'sonner';
 import BlogsTable from '@/components/tables/BlogTable';
+import StatCard from '@/components/ui/stat-card';
 
 export default function BlogManagement() {
   const [blogs, setBlogs] = useState<Blog[]>([]);
@@ -56,13 +57,17 @@ export default function BlogManagement() {
     }
   };
 
+  // ✅ Blog Stats
+  const total = blogs.length;
+  const drafts = blogs.filter(blog => blog.featured).length;
+  const categories = new Set(blogs.map(blog => blog.category)).size;
+
   const filteredBlogs = blogs.filter(blog =>
     blog.title.toLowerCase().includes('') ||
     blog.author.toLowerCase().includes('') ||
     blog.category.toLowerCase().includes('')
   );
 
-  console.log("blogs", filteredBlogs)
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -70,6 +75,7 @@ export default function BlogManagement() {
       </div>
     );
   }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -93,12 +99,19 @@ export default function BlogManagement() {
         </Dialog>
       </div>
 
+      {/* ✅ Blog Stats */}
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard title="Total Blogs" value={total} icon={FileText} />
+        <StatCard title="Featured" value={drafts} icon={FileClock} />
+        <StatCard title="Categories" value={categories} icon={FolderOpen} />
+      </div>
+
       {/* Blogs Table */}
       <div className='h-full w-full'>
         <BlogsTable
           blogs={filteredBlogs}
-          onEdit={(blog) => { setSelectedBlog(blog); setIsEditDialogOpen(true); }}
-          onDelete={(blog) => setDeleteBlog(blog)} // triggers the alert dialog
+          onEdit={(blog) => { setSelectedBlog(blog._id); setIsEditDialogOpen(true); }}
+          onDelete={(blog) => setDeleteBlog(blog._id)} 
         />
       </div>
 

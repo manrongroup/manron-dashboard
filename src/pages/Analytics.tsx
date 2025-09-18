@@ -1,154 +1,306 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { Skeleton } from '@/components/ui/skeleton';
 import StatCard from '@/components/ui/stat-card';
-import { BarChart3, Users, Eye, MousePointer, TrendingUp, Calendar } from 'lucide-react';
-import { LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { useAnalytics } from '@/contexts/AnalysisContext';
+import {
+  BarChart3,
+  Users,
+  Home,
+  FileText,
+  Mail,
+  MessageSquare,
+  TrendingUp,
+  Calendar,
+  RefreshCw,
+  Download,
+  Filter,
+  Activity,
+  DollarSign,
+  Clock,
+  AlertTriangle,
+  CheckCircle,
+  Zap,
+  Shield,
+  Database
+} from 'lucide-react';
+import {
+  LineChart,
+  Line,
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend
+} from 'recharts';
 
-const mockAnalyticsData = {
-  overview: {
-    totalVisitors: 15420,
-    pageViews: 45890,
-    bounceRate: 34.2,
-    avgSessionDuration: '2m 45s'
-  },
-  weeklyData: [
-    { day: 'Mon', visitors: 1200, pageViews: 3400, sessions: 890 },
-    { day: 'Tue', visitors: 1500, pageViews: 4200, sessions: 1100 },
-    { day: 'Wed', visitors: 1800, pageViews: 5100, sessions: 1300 },
-    { day: 'Thu', visitors: 1600, pageViews: 4800, sessions: 1200 },
-    { day: 'Fri', visitors: 2200, pageViews: 6200, sessions: 1600 },
-    { day: 'Sat', visitors: 1900, pageViews: 5400, sessions: 1400 },
-    { day: 'Sun', visitors: 1400, pageViews: 3900, sessions: 1000 }
-  ],
-  websiteData: [
-    { name: 'Prime Properties', visitors: 5200, color: '#8b5cf6' },
-    { name: 'Tech Blog', visitors: 3800, color: '#06b6d4' },
-    { name: 'Corporate Site', visitors: 2900, color: '#10b981' },
-    { name: 'Portfolio', visitors: 2100, color: '#f59e0b' },
-    { name: 'News Portal', visitors: 1420, color: '#ef4444' }
-  ],
-  topPages: [
-    { page: '/real-estate/luxury-homes', views: 2400, bounce: 28 },
-    { page: '/blog/tech-trends-2024', views: 1890, bounce: 32 },
-    { page: '/about', views: 1560, bounce: 45 },
-    { page: '/contact', views: 1200, bounce: 38 },
-    { page: '/services', views: 980, bounce: 42 }
-  ]
-};
+const COLORS = ['#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#6366f1'];
 
 export default function Analytics() {
-  const [timeRange, setTimeRange] = useState('7d');
-  const [selectedWebsite, setSelectedWebsite] = useState('all');
+  const {
+    stats,
+    loading,
+    error,
+    filters,
+    setFilters,
+    refreshStats,
+    getKPIs,
+    getChartData
+  } = useAnalytics();
 
-  const COLORS = ['#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444'];
+  const [refreshing, setRefreshing] = useState(false);
+  const [selectedMetric, setSelectedMetric] = useState('overview');
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await refreshStats();
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const handleDateRangeChange = (value: string) => {
+    setFilters({ dateRange: value as any });
+  };
+
+  const formatNumber = (num: number) => {
+    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+    return num.toString();
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-RW', {
+      style: 'currency',
+      currency: 'RWF',
+      minimumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  const getMetricIcon = (metric: string) => {
+    switch (metric) {
+      case 'users': return Users;
+      case 'properties': return Home;
+      case 'blogs': return FileText;
+      case 'contacts': return MessageSquare;
+      case 'emails': return Mail;
+      default: return Activity;
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Analytics</h1>
+            <p className="text-muted-foreground">Comprehensive system analytics and insights</p>
+          </div>
+          <Skeleton className="h-10 w-32" />
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-32" />
+          ))}
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <Skeleton className="h-80" />
+          <Skeleton className="h-80" />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Card className="w-full max-w-md text-center">
+          <CardHeader>
+            <AlertTriangle className="h-12 w-12 text-destructive mx-auto mb-4" />
+            <CardTitle className="text-destructive">Error Loading Analytics</CardTitle>
+            <CardDescription>{error}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={handleRefresh} className="w-full">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Try Again
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const kpis = getKPIs();
+  const chartData = getChartData(selectedMetric as any);
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            Analytics Dashboard
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            Track performance across all your websites
-          </p>
+          <h1 className="text-3xl font-bold tracking-tight">Analytics</h1>
+          <p className="text-muted-foreground">Comprehensive system analytics and insights</p>
         </div>
-        
-        <div className="flex gap-4">
-          <Select value={selectedWebsite} onValueChange={setSelectedWebsite}>
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="Select website" />
+        <div className="flex items-center gap-2">
+          <Select value={filters.dateRange} onValueChange={handleDateRangeChange}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Date range" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Websites</SelectItem>
-              <SelectItem value="prime-properties">Prime Properties</SelectItem>
-              <SelectItem value="tech-blog">Tech Blog</SelectItem>
-              <SelectItem value="corporate">Corporate Site</SelectItem>
-              <SelectItem value="portfolio">Portfolio</SelectItem>
-              <SelectItem value="news">News Portal</SelectItem>
+              <SelectItem value="24h">Last 24 hours</SelectItem>
+              <SelectItem value="7d">Last 7 days</SelectItem>
+              <SelectItem value="30d">Last 30 days</SelectItem>
+              <SelectItem value="90d">Last 90 days</SelectItem>
+              <SelectItem value="1y">Last year</SelectItem>
             </SelectContent>
           </Select>
-          
-          <Select value={timeRange} onValueChange={setTimeRange}>
-            <SelectTrigger className="w-32">
-              <SelectValue placeholder="Time range" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="24h">24 Hours</SelectItem>
-              <SelectItem value="7d">7 Days</SelectItem>
-              <SelectItem value="30d">30 Days</SelectItem>
-              <SelectItem value="90d">90 Days</SelectItem>
-            </SelectContent>
-          </Select>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={refreshing}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+          <Button variant="outline" size="sm">
+            <Download className="h-4 w-4 mr-2" />
+            Export
+          </Button>
         </div>
       </div>
 
-      {/* Overview Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard
-          title="Total Visitors"
-          value={mockAnalyticsData.overview.totalVisitors.toLocaleString()}
-          icon={Users}
-          trend={{ value: 12.5, isPositive: true }}
-        />
-        <StatCard
-          title="Page Views"
-          value={mockAnalyticsData.overview.pageViews.toLocaleString()}
-          icon={Eye}
-          trend={{ value: 8.2, isPositive: true }}
-        />
-        <StatCard
-          title="Bounce Rate"
-          value={`${mockAnalyticsData.overview.bounceRate}%`}
-          icon={MousePointer}
-          trend={{ value: 3.1, isPositive: false }}
-        />
-        <StatCard
-          title="Avg. Session"
-          value={mockAnalyticsData.overview.avgSessionDuration}
-          icon={Calendar}
-          trend={{ value: 5.4, isPositive: true }}
-        />
+      {/* Key Performance Indicators */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {kpis.slice(0, 4).map((kpi, index) => (
+          <StatCard
+            key={index}
+            title={kpi.title}
+            value={kpi.value}
+            description={kpi.description}
+            icon={getMetricIcon((kpi as any).category || 'overview')}
+            variant={kpi.isPositive ? 'success' : 'warning'}
+            trend={{
+              value: (kpi as any).change || 0,
+              isPositive: kpi.isPositive,
+              period: (kpi as any).period || 'vs previous period'
+            }}
+            badge={(kpi as any).badge ? { text: (kpi as any).badge, variant: 'secondary' } : undefined}
+          />
+        ))}
       </div>
 
-      {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Visitors Trend */}
-        <Card className="border-border/50 shadow-subtle">
+      {/* System Health Overview */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">System Health</CardTitle>
+            <Shield className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats?.overview?.systemHealth || 0}%</div>
+            <div className="flex items-center space-x-2 text-xs text-muted-foreground">
+              <Progress value={stats?.overview?.systemHealth || 0} className="flex-1" />
+              <span>{stats?.overview?.systemHealth > 95 ? 'Excellent' : 'Good'}</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Response Time</CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats?.overview?.responseTime || 0}ms</div>
+            <p className="text-xs text-muted-foreground">
+              Average response time
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Uptime</CardTitle>
+            <CheckCircle className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats?.overview?.uptime || 0}%</div>
+            <p className="text-xs text-muted-foreground">
+              Last 30 days
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Error Rate</CardTitle>
+            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{(stats?.overview?.errorRate || 0).toFixed(2)}%</div>
+            <p className="text-xs text-muted-foreground">
+              System errors
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Charts Section */}
+      <div className="grid gap-4 md:grid-cols-2">
+        {/* Activity Trends */}
+        <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              Visitors Trend
-            </CardTitle>
+            <CardTitle>Activity Trends</CardTitle>
+            <CardDescription>User and property activity over time</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={mockAnalyticsData.weeklyData}>
-                  <defs>
-                    <linearGradient id="colorVisitors" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis dataKey="day" className="text-xs" />
-                  <YAxis className="text-xs" />
-                  <Tooltip 
-                    contentStyle={{
-                      backgroundColor: 'hsl(var(--card))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px'
-                    }}
+                <AreaChart data={stats?.trendsData?.weekly || []}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="day" />
+                  <YAxis />
+                  <Tooltip />
+                  <Area
+                    type="monotone"
+                    dataKey="users"
+                    stackId="1"
+                    stroke="#8b5cf6"
+                    fill="#8b5cf6"
+                    fillOpacity={0.6}
                   />
-                  <Area 
-                    type="monotone" 
-                    dataKey="visitors" 
-                    stroke="hsl(var(--primary))" 
-                    fillOpacity={1} 
-                    fill="url(#colorVisitors)" 
+                  <Area
+                    type="monotone"
+                    dataKey="properties"
+                    stackId="1"
+                    stroke="#06b6d4"
+                    fill="#06b6d4"
+                    fillOpacity={0.6}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="blogs"
+                    stackId="1"
+                    stroke="#10b981"
+                    fill="#10b981"
+                    fillOpacity={0.6}
                   />
                 </AreaChart>
               </ResponsiveContainer>
@@ -156,39 +308,31 @@ export default function Analytics() {
           </CardContent>
         </Card>
 
-        {/* Website Distribution */}
-        <Card className="border-border/50 shadow-subtle">
+        {/* User Distribution */}
+        <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5" />
-              Traffic by Website
-            </CardTitle>
+            <CardTitle>User Distribution</CardTitle>
+            <CardDescription>Breakdown by user categories</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={mockAnalyticsData.websiteData}
+                    data={stats?.userStats?.usersByCategory || []}
                     cx="50%"
                     cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="visitors"
+                    innerRadius={60}
+                    outerRadius={100}
+                    paddingAngle={5}
+                    dataKey="value"
                   >
-                    {mockAnalyticsData.websiteData.map((entry, index) => (
+                    {(stats?.userStats?.usersByCategory || []).map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip 
-                    contentStyle={{
-                      backgroundColor: 'hsl(var(--card))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px'
-                    }}
-                  />
+                  <Tooltip />
+                  <Legend />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -196,59 +340,161 @@ export default function Analytics() {
         </Card>
       </div>
 
-      {/* Page Views Chart */}
-      <Card className="border-border/50 shadow-subtle">
-        <CardHeader>
-          <CardTitle>Page Views & Sessions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={mockAnalyticsData.weeklyData}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis dataKey="day" className="text-xs" />
-                <YAxis className="text-xs" />
-                <Tooltip 
-                  contentStyle={{
-                    backgroundColor: 'hsl(var(--card))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px'
-                  }}
-                />
-                <Bar dataKey="pageViews" fill="hsl(var(--primary))" />
-                <Bar dataKey="sessions" fill="hsl(var(--accent))" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Top Pages */}
-      <Card className="border-border/50 shadow-subtle">
-        <CardHeader>
-          <CardTitle>Top Performing Pages</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {mockAnalyticsData.topPages.map((page, index) => (
-              <div key={index} className="flex items-center justify-between p-4 rounded-lg bg-card/50 border border-border/50">
-                <div className="flex-1">
-                  <p className="font-medium">{page.page}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {page.views.toLocaleString()} views • {page.bounce}% bounce rate
-                  </p>
+      {/* Detailed Analytics */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {/* Property Analytics */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Property Analytics</CardTitle>
+            <CardDescription>Property performance metrics</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Total Properties</span>
+                <span className="text-2xl font-bold">{formatNumber(stats?.overview?.totalProperties || 0)}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Featured</span>
+                <span className="text-lg font-semibold">{stats?.propertyStats?.featuredProperties || 0}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Growth Rate</span>
+                <Badge variant={stats?.propertyStats?.propertiesGrowthRate > 0 ? 'secondary' : 'destructive'}>
+                  {stats?.propertyStats?.propertiesGrowthRate > 0 ? '+' : ''}{stats?.propertyStats?.propertiesGrowthRate || 0}%
+                </Badge>
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Properties by Type</span>
                 </div>
-                <div className="w-20 h-2 bg-muted rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-primary rounded-full transition-all duration-500"
-                    style={{ width: `${(page.views / 2400) * 100}%` }}
-                  />
+                {(stats?.propertyStats?.propertiesByType || []).slice(0, 3).map((type, index) => (
+                  <div key={index} className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">{type.name}</span>
+                    <span className="text-sm font-medium">{type.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Blog Analytics */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Blog Analytics</CardTitle>
+            <CardDescription>Content performance metrics</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Total Posts</span>
+                <span className="text-2xl font-bold">{formatNumber(stats?.overview?.totalBlogs || 0)}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Published</span>
+                <span className="text-lg font-semibold">{stats?.blogStats?.publishedBlogs || 0}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Drafts</span>
+                <span className="text-lg font-semibold">{stats?.blogStats?.draftBlogs || 0}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Growth Rate</span>
+                <Badge variant={stats?.blogStats?.blogGrowthRate > 0 ? 'secondary' : 'destructive'}>
+                  {stats?.blogStats?.blogGrowthRate > 0 ? '+' : ''}{stats?.blogStats?.blogGrowthRate || 0}%
+                </Badge>
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Content Performance</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Avg. Read Time</span>
+                  <span className="text-sm font-medium">{stats?.blogStats?.contentPerformance?.averageReadTime || 0} min</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Engagement Rate</span>
+                  <span className="text-sm font-medium">{stats?.blogStats?.contentPerformance?.engagementRate || 0}%</span>
                 </div>
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Contact Analytics */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Contact Analytics</CardTitle>
+            <CardDescription>Inquiry and response metrics</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Total Inquiries</span>
+                <span className="text-2xl font-bold">{formatNumber(stats?.overview?.totalContacts || 0)}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">New</span>
+                <span className="text-lg font-semibold">{stats?.contactStats?.newContacts || 0}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Resolved</span>
+                <span className="text-lg font-semibold">{stats?.contactStats?.resolvedContacts || 0}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Pending</span>
+                <span className="text-lg font-semibold">{stats?.contactStats?.pendingContacts || 0}</span>
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Response Time</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Average</span>
+                  <span className="text-sm font-medium">{stats?.contactStats?.responseTime?.average || 0} min</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Conversion Rate</span>
+                  <span className="text-sm font-medium">{stats?.contactStats?.conversionRate || 0}%</span>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Revenue Analytics */}
+      {stats?.overview?.revenue && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Revenue Analytics</CardTitle>
+            <CardDescription>Financial performance and trends</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-green-600">
+                  {formatCurrency(stats.overview.revenue)}
+                </div>
+                <p className="text-sm text-muted-foreground">Total Revenue</p>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-blue-600">
+                  {formatCurrency(stats.overview.monthlyRevenue)}
+                </div>
+                <p className="text-sm text-muted-foreground">Monthly Revenue</p>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-purple-600">
+                  {stats.overview.conversionRate}%
+                </div>
+                <p className="text-sm text-muted-foreground">Conversion Rate</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

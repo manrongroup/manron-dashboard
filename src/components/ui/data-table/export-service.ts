@@ -1,7 +1,7 @@
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 import { ColumnDef } from "@tanstack/react-table";
-import { ExportOptions } from "./index";
+import { ExportOptions } from "./data-table";
 
 export class ExportService {
   static exportToPDF<T>(

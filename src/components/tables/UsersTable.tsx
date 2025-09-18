@@ -51,7 +51,7 @@ const UsersTable: React.FC<UsersTableProps> = ({ users, onEdit, onDelete }) => {
     },
     {
       accessorKey: 'email',
-      header: 'Email', 
+      header: 'Email',
       cell: ({ row }: any) => <div>{row.getValue('email')}</div>,
     },
     {

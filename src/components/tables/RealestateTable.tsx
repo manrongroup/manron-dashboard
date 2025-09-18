@@ -5,7 +5,7 @@ import { DataTable } from "../ui/data-table";
 import { Property } from "@/types/realEstate";
 import { RealEstate } from "@/types";
 
-    
+
 interface RealEstateTableProps {
     properties: Property[];
     onDelete: (id: string) => void;
@@ -53,20 +53,20 @@ const RealEstateTable: React.FC<RealEstateTableProps> = ({
             enableHiding: false,
         },
         {
-  accessorKey: "images",
-  header: "Image",
-  cell: ({ row }: any) => {
-    const images = row.getValue("images") as { url: string; isMain: boolean }[];
-    const mainImage = images.find(img => img.isMain) || images[0];
-    return (
-      <img
-        src={mainImage?.url}
-        alt="Property"
-        className="w-20 h-14 object-cover rounded-md"
-      />
-    );
-  },
-},
+            accessorKey: "images",
+            header: "Image",
+            cell: ({ row }: any) => {
+                const images = row.getValue("images") as { url: string; isMain: boolean }[];
+                const mainImage = images.find(img => img.isMain) || images[0];
+                return (
+                    <img
+                        src={mainImage?.url}
+                        alt="Property"
+                        className="w-20 h-14 object-cover rounded-md"
+                    />
+                );
+            },
+        },
         {
             accessorKey: "title",
             header: "Title",
@@ -143,7 +143,7 @@ const RealEstateTable: React.FC<RealEstateTableProps> = ({
             header: "Furnished",
             cell: ({ row }: any) => <div>{row.getValue("furnished") ? "Yes" : "No"}</div>,
         },
-            {
+        {
             accessorKey: "likes",
             header: "Likes",
             cell: ({ row }: any) => <div>{row.getValue("likes")}</div>,
@@ -194,7 +194,7 @@ const RealEstateTable: React.FC<RealEstateTableProps> = ({
     ];
 
     return (
-        <div className='max-w-full  md:max-w-[600px]  xl:max-w-[1200px] 2xl:max-w-full mx-auto p-4'>
+        <div className='max-w-full  2xl:max-w-full mx-auto p-4'>
             <DataTable
                 columns={columns}
                 data={properties}

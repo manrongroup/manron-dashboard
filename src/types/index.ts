@@ -1,11 +1,14 @@
 export interface User {
-  _id:string;
+  _id: string;
   id: string;
   email: string;
   role: 'superAdmin' | 'admin' | 'worker' | 'user' | 'agent';
   fullname?: string;
   avatar?: string;
   telephone?: string;
+  isActive: boolean;
+  lastLogin?: string;
+  permissions?: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -24,6 +27,12 @@ export interface Blog {
   featured: boolean;
   image: string;
   images?: string[];
+  status: 'draft' | 'published' | 'archived';
+  views?: number;
+  likes?: number;
+  shares?: number;
+  seoTitle?: string;
+  seoDescription?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -124,4 +133,293 @@ export interface PaginatedResponse<T> {
     totalItems: number;
     itemsPerPage: number;
   };
+}
+
+// Enhanced Analytics Types
+export interface AnalyticsOverview {
+  totalUsers: number;
+  totalProperties: number;
+  totalBlogs: number;
+  totalContacts: number;
+  totalEmailsSent: number;
+  activeAgents: number;
+  publishedBlogs: number;
+  pendingContacts: number;
+  growthRate: number;
+  conversionRate: number;
+  revenue: number;
+  monthlyRevenue: number;
+  systemHealth: number;
+  responseTime: number;
+  uptime: number;
+  errorRate: number;
+}
+
+export interface UserAnalytics {
+  totalUsers: number;
+  newUsersThisMonth: number;
+  activeUsers: number;
+  userGrowthRate: number;
+  usersByCategory: AnalyticsCategory[];
+  userEngagement: {
+    dailyActiveUsers: number;
+    weeklyActiveUsers: number;
+    monthlyActiveUsers: number;
+  };
+  userRetention: {
+    day1: number;
+    day7: number;
+    day30: number;
+  };
+}
+
+export interface PropertyAnalytics {
+  totalProperties: number;
+  featuredProperties: number;
+  recentProperties: number;
+  propertiesGrowthRate: number;
+  propertiesByStatus: AnalyticsCategory[];
+  propertiesByType: AnalyticsCategory[];
+  averagePrice: number;
+  priceRange: {
+    min: number;
+    max: number;
+    average: number;
+  };
+  topLocations: AnalyticsCategory[];
+}
+
+export interface BlogAnalytics {
+  totalBlogs: number;
+  publishedBlogs: number;
+  draftBlogs: number;
+  blogGrowthRate: number;
+  blogsByCategory: AnalyticsCategory[];
+  recentBlogActivity: BlogActivity[];
+  topPerformingBlogs: {
+    _id: string;
+    title: string;
+    views: number;
+    likes: number;
+    shares: number;
+  }[];
+  contentPerformance: {
+    averageReadTime: number;
+    bounceRate: number;
+    engagementRate: number;
+  };
+}
+
+export interface ContactAnalytics {
+  totalContacts: number;
+  newContacts: number;
+  resolvedContacts: number;
+  pendingContacts: number;
+  contactGrowthRate: number;
+  contactsByStatus: AnalyticsCategory[];
+  contactsByPriority: AnalyticsCategory[];
+  contactTrends: ContactTrend[];
+  responseTime: {
+    average: number;
+    median: number;
+    p95: number;
+  };
+  conversionRate: number;
+}
+
+export interface EmailAnalytics {
+  totalEmailsSent: number;
+  successfulEmails: number;
+  failedEmails: number;
+  emailSuccessRate: number;
+  emailsByCategory: AnalyticsCategory[];
+  emailTrends: EmailTrend[];
+  openRate: number;
+  clickRate: number;
+  unsubscribeRate: number;
+  bounceRate: number;
+}
+
+export interface SystemHealth {
+  systemHealth: number;
+  responseTime: number;
+  uptime: number;
+  errorRate: number;
+  memoryUsage: number;
+  cpuUsage: number;
+  diskUsage: number;
+  databaseConnections: number;
+  activeSessions: number;
+}
+
+export interface AnalyticsCategory {
+  name: string;
+  value: number;
+  color: string;
+  percentage?: number;
+}
+
+export interface BlogActivity {
+  date: string;
+  published: number;
+  drafts: number;
+  views: number;
+  likes: number;
+}
+
+export interface ContactTrend {
+  date: string;
+  new: number;
+  resolved: number;
+  pending: number;
+  responseTime: number;
+}
+
+export interface EmailTrend {
+  date: string;
+  sent: number;
+  delivered: number;
+  opened: number;
+  clicked: number;
+  failed: number;
+}
+
+export interface RecentActivity {
+  _id: string;
+  type: 'user' | 'property' | 'blog' | 'contact' | 'email' | 'system';
+  title: string;
+  description: string;
+  timestamp: string;
+  status?: string;
+  priority?: 'low' | 'medium' | 'high';
+  user?: string;
+  metadata?: Record<string, any>;
+}
+
+export interface TrendData {
+  weekly: WeeklyTrend[];
+  monthly: MonthlyTrend[];
+  yearly: YearlyTrend[];
+}
+
+export interface WeeklyTrend {
+  day: string;
+  users: number;
+  properties: number;
+  blogs: number;
+  contacts: number;
+  emails: number;
+  revenue: number;
+}
+
+export interface MonthlyTrend {
+  month: string;
+  users: number;
+  properties: number;
+  blogs: number;
+  contacts: number;
+  emails: number;
+  revenue: number;
+}
+
+export interface YearlyTrend {
+  year: string;
+  users: number;
+  properties: number;
+  blogs: number;
+  contacts: number;
+  emails: number;
+  revenue: number;
+}
+
+export interface AnalyticsFilters {
+  dateRange: '24h' | '7d' | '30d' | '90d' | '1y' | 'custom';
+  startDate?: string;
+  endDate?: string;
+  category?: string;
+  status?: string;
+  priority?: string;
+  userRole?: string;
+  propertyType?: string;
+  blogCategory?: string;
+}
+
+export interface KPI {
+  title: string;
+  value: string | number;
+  change: string;
+  isPositive: boolean;
+  trend?: number;
+  target?: number;
+  description?: string;
+}
+
+export interface ChartData {
+  labels: string[];
+  datasets: {
+    label: string;
+    data: number[];
+    backgroundColor?: string | string[];
+    borderColor?: string | string[];
+    fill?: boolean;
+  }[];
+}
+
+// Security and Permissions
+export interface Permission {
+  id: string;
+  name: string;
+  description: string;
+  resource: string;
+  action: string;
+}
+
+export interface Role {
+  id: string;
+  name: string;
+  description: string;
+  permissions: string[];
+  level: number;
+  isSystem: boolean;
+}
+
+export interface SecurityEvent {
+  _id: string;
+  type: 'login' | 'logout' | 'permission_denied' | 'suspicious_activity' | 'data_access' | 'data_modification';
+  userId?: string;
+  userEmail?: string;
+  ipAddress: string;
+  userAgent: string;
+  resource?: string;
+  action?: string;
+  details: Record<string, any>;
+  timestamp: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+}
+
+// Performance Monitoring
+export interface PerformanceMetrics {
+  responseTime: number;
+  throughput: number;
+  errorRate: number;
+  availability: number;
+  memoryUsage: number;
+  cpuUsage: number;
+  databaseQueryTime: number;
+  cacheHitRate: number;
+}
+
+export interface AuditLog {
+  _id: string;
+  userId: string;
+  userEmail: string;
+  action: string;
+  resource: string;
+  resourceId: string;
+  changes?: Record<string, any>;
+  ipAddress: string;
+  userAgent: string;
+  timestamp: string;
+  success: boolean;
+  errorMessage?: string;
 }

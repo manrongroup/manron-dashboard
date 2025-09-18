@@ -9,7 +9,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { CustomAction, FilterConfig } from "./index";
+import { CustomAction, FilterConfig } from "./data-table";
 
 interface DataTableToolbarProps<TData> {
     table: Table<TData>;

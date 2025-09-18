@@ -55,6 +55,7 @@ const managementItems = [
 
 const adminItems = [
   { title: 'User Management', url: '/users', icon: User },
+  { title: 'Agents', url: '/agents', icon: Users },
   { title: 'Settings', url: '/settings', icon: Settings },
 ];
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus } from 'lucide-react';
+import { CheckCircle, DollarSign, Home, Key, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
@@ -11,6 +11,7 @@ import { realEstateApi } from '@/lib/api';
 import { toast } from 'sonner';
 import RealEstateTable from '@/components/tables/RealestateTable';
 import { Property } from '@/types/realEstate';
+import StatCard from '@/components/ui/stat-card';
 
 export default function RealEstateManagement() {
   const { hasPermission } = useAuth();
@@ -49,6 +50,12 @@ export default function RealEstateManagement() {
     }
   };
 
+    // ✅ Real Estate Stats
+  const total = realEstate.length;
+  const available = realEstate.filter((p) => p.status === 'Available').length;
+  const sold = realEstate.filter((p) => p.saleMethod === 'Sold').length;
+  const rented = realEstate.filter((p) => p.saleMethod === 'rented').length;
+
   const filteredRealEstate = realEstate.filter((property) => {
     const matchesSearch = property.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       property.location.toLowerCase().includes(searchTerm.toLowerCase());
@@ -59,15 +66,7 @@ export default function RealEstateManagement() {
 
   console.log("Filtered Real Estate Properties:", filteredRealEstate);
   console.log("All Real Estate Properties:", realEstate);
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'available': return 'bg-success text-success-foreground';
-      case 'sold': return 'bg-destructive text-destructive-foreground';
-      case 'rented': return 'bg-primary text-primary-foreground';
-      case 'pending': return 'bg-secondary text-secondary-foreground';
-      default: return 'bg-muted text-muted-foreground';
-    }
-  };
+;
 
   if (loading) {
     return (
@@ -87,7 +86,7 @@ export default function RealEstateManagement() {
         {hasPermission('manage_content') && (
           <Dialog open={isCreateDialogOpen} onOpenChange={(open) => {
             setIsCreateDialogOpen(open);
-            if (!open) setEditingProperty(null); 
+            if (!open) setEditingProperty(null);
           }}>
             <DialogTrigger asChild>
               <Button className="flex items-center gap-2">
@@ -103,7 +102,7 @@ export default function RealEstateManagement() {
                 property={editingProperty}
                 onSubmit={() => {
                   setIsCreateDialogOpen(false);
-                  setEditingProperty(null); 
+                  setEditingProperty(null);
                   fetchRealEstate();
                 }}
                 onCancel={() => {
@@ -116,6 +115,14 @@ export default function RealEstateManagement() {
 
         )}
 
+      </div>
+
+            {/* ✅ Stats Cards */}
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard title="Total Properties" value={total} icon={Home} />
+        <StatCard title="Available" value={available} icon={CheckCircle} />
+        <StatCard title="Sold" value={sold} icon={DollarSign} />
+        <StatCard title="Rented" value={rented} icon={Key} />
       </div>
 
       <RealEstateTable

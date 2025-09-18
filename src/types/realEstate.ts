@@ -4,7 +4,7 @@ export interface Property {
     title: string;
     description: string;
     type: string;
-    saleMethod: 'Rent' | 'Sale';
+    saleMethod: string;
     price: number;
     currency: string;
     paymentType: 'per_month' | 'per_year' | 'one_time';

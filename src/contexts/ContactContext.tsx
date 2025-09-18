@@ -69,7 +69,7 @@ export function ContactProvider({ children }: { children: ReactNode }) {
     const fetchContacts = useCallback(async (filters?: ContactFilters) => {
         try {
             setLoading(true);
-            const response = await api.get<PaginatedResponse<Contact>>('/contacts', {
+            const response = await api.get<PaginatedResponse<Contact>>('/message', {
                 params: filters,
             });
             setState(prev => ({
@@ -93,7 +93,7 @@ export function ContactProvider({ children }: { children: ReactNode }) {
     const getContactById = useCallback(async (id: string) => {
         try {
             setLoading(true);
-            const response = await api.get<ApiResponse<Contact>>(`/contacts/${id}`);
+            const response = await api.get<ApiResponse<Contact>>(`/message/${id}`);
             return response.data.data;
         } catch (err) {
             toast({
@@ -114,7 +114,7 @@ export function ContactProvider({ children }: { children: ReactNode }) {
     ) => {
         try {
             setLoading(true);
-            await api.patch(`/contacts/${id}/status`, { status, notes });
+            await api.patch(`/message/${id}/status`, { status, notes });
             toast({
                 title: 'Success',
                 description: 'Contact status updated successfully',
@@ -135,7 +135,7 @@ export function ContactProvider({ children }: { children: ReactNode }) {
     const assignContact = useCallback(async (id: string, assignedTo: string) => {
         try {
             setLoading(true);
-            await api.patch(`/contacts/${id}/assign`, { assignedTo });
+            await api.patch(`/message/${id}/assign`, { assignedTo });
             toast({
                 title: 'Success',
                 description: 'Contact assigned successfully',
@@ -156,7 +156,7 @@ export function ContactProvider({ children }: { children: ReactNode }) {
     const deleteContact = useCallback(async (id: string) => {
         try {
             setLoading(true);
-            await api.delete(`/contacts/${id}`);
+            await api.delete(`/message/${id}`);
             toast({
                 title: 'Success',
                 description: 'Contact deleted successfully',
