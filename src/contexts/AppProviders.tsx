@@ -31,6 +31,6 @@ export function AppProviders({ children }: AppProvidersProps) {
                 </RealEstateProvider>
             </UsersProvider>
 
-        </AuthProvider>
+         </AuthProvider>
     );
 }

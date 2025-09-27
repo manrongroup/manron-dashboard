@@ -70,18 +70,18 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/50 to-background p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-gradient-to-br from-primary to-accent rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse-glow">
-            <Home className="w-8 h-8 text-white" />
+          <div className="w-16 h-16  flex items-center justify-center mx-auto mb-4 animate-pulse-glow">
+             <img className='rounded-full' src="./logo.png" alt="" />
           </div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            WebManager
+          <h1 className="text-3xl font-bold text-primary">
+            Manron Group Dashboard
           </h1>
           <p className="text-muted-foreground mt-2">
             Multi-Website Management Dashboard
           </p>
         </div>
 
-        <Card className="border-border/50 shadow-lg">
+        <Card className="border-border/50 shadow rounded">
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl text-center">Welcome back</CardTitle>
             <CardDescription className="text-center">
@@ -100,6 +100,7 @@ export default function Login() {
                       <FormControl>
                         <Input
                           type="email"
+                          className='py-7 rounded text-md '
                           placeholder="Enter your email"
                           {...field}
                           disabled={isSubmitting}
@@ -112,11 +113,13 @@ export default function Login() {
                 <FormField
                   control={form.control}
                   name="password"
+                  
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem >
                       <FormLabel>Password</FormLabel>
                       <FormControl>
                         <Input
+                        className='py-7 rounded text-md '
                           type="password"
                           placeholder="Enter your password"
                           {...field}
@@ -129,7 +132,7 @@ export default function Login() {
                 />
                 <Button
                   type="submit"
-                  className="w-full bg-gradient-to-r from-primary to-accent hover:from-primary-dark hover:to-primary text-white"
+                  className="w-full bg-primary rounded py-7 text-white text-lg font-semibold"
                   disabled={isSubmitting}
                 >
                   {isSubmitting ? (
@@ -146,11 +149,7 @@ export default function Login() {
           </CardContent>
         </Card>
 
-        <div className="text-center mt-6 text-sm text-muted-foreground">
-          <p>Demo Credentials:</p>
-          <p>Email: super@manron.com</p>
-          <p>Password: password123</p>
-        </div>
+        
       </div>
     </div>
   );

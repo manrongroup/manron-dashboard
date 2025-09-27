@@ -131,8 +131,8 @@ export function UserForm({ user, onSuccess }: UserFormProps) {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="user">User</SelectItem>
-                    <SelectItem value="worker">Worker</SelectItem>
+                    {/* <SelectItem value="user">User</SelectItem>
+                    <SelectItem value="worker">Worker</SelectItem> */}
                     <SelectItem value="admin">Admin</SelectItem>
                     <SelectItem value="superAdmin">Super Admin</SelectItem>
                     <SelectItem value="client">Client</SelectItem>

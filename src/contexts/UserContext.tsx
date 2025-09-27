@@ -116,10 +116,16 @@ export const UsersProvider = ({ children }: { children: React.ReactNode }) => {
         }
     };
 
-    // Initial load
+    // Initial load (only if authenticated)
     useEffect(() => {
+        const hasToken = !!localStorage.getItem('token');
+        if (!hasToken) {
+            setLoading(false);
+            return;
+        }
         fetchUsers();
         fetchAgents();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     return (

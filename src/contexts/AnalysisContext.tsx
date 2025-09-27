@@ -25,6 +25,7 @@ interface AnalyticsStats {
   userStats: UserAnalytics;
   propertyStats: PropertyAnalytics;
   blogStats: BlogAnalytics;
+  totalSubscribers:any
   contactStats: ContactAnalytics;
   emailStats: EmailAnalytics;
   systemHealth: SystemHealth;
@@ -33,6 +34,58 @@ interface AnalyticsStats {
   trendsData: TrendData;
   kpis: KPI[];
   chartData: Record<string, ChartData>;
+  // Extended datasets from backend GET endpoints
+  agentPerformance: {
+    agents: Array<{
+      fullname?: string;
+      email?: string;
+      telephone?: string;
+      photo?: string;
+      rating?: number;
+      totalProperties: number;
+      soldCount: number;
+      rentedCount: number;
+      successRate: number;
+      totalRevenue: number;
+      experience?: number;
+    }>;
+    period?: string;
+  } | null;
+  revenue: {
+    summary: {
+      totalRevenue: number;
+      averagePrice: number;
+      medianPrice?: number;
+      priceRange?: { min: number; max: number };
+      soldCount?: number;
+      rentedCount?: number;
+    };
+    monthlyTrends: Array<{ _id?: any; revenue?: number; count?: number; year?: number; month?: number }>;
+    byType: Array<{ _id?: string; revenue: number; count: number }>;
+    currency?: string;
+  } | null;
+  newsletter: {
+    summary: {
+      totalSubscribers: number;
+      newSubscribers: number;
+      activeSubscribers: number;
+      unsubscribeRate: number;
+    };
+    trends: Array<{ _id?: any; count?: number; year?: number; month?: number }>
+  } | null;
+  realtime: {
+    activeUsers: number;
+    recentProperties?: number;
+    recentInquiries?: number;
+    systemLoad: any;
+    timestamp: string;
+  } | null;
+  trending: {
+    properties?: any[];
+    locations?: any[];
+    agents?: any[];
+    blogs?: any[];
+  } | null;
 }
 
 interface AnalyticsContextType {
@@ -62,6 +115,11 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
     dateRange: '30d'
   });
   const [notifications, setNotifications] = useState<any[]>([]);
+  const [agentPerformance, setAgentPerformance] = useState<AnalyticsStats['agentPerformance']>(null);
+  const [revenue, setRevenue] = useState<AnalyticsStats['revenue']>(null);
+  const [newsletter, setNewsletter] = useState<AnalyticsStats['newsletter']>(null);
+  const [realtime, setRealtime] = useState<AnalyticsStats['realtime']>(null);
+  const [trending, setTrending] = useState<AnalyticsStats['trending']>(null);
 
   const { toast } = useToast();
 
@@ -244,6 +302,69 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
     }
   }, [filters, generateDefaultEmailAnalytics]);
 
+  const fetchAgentPerformance = useCallback(async () => {
+    try {
+      const data = await analyticsService.getAgentPerformance(filters);
+      return data as any;
+    } catch (error) {
+      console.warn('Failed to fetch agent performance, using defaults:', error);
+      return { agents: [] };
+    }
+  }, [filters]);
+
+  const fetchRevenue = useCallback(async () => {
+    try {
+      const data = await analyticsService.getRevenueAnalytics(filters as any);
+      return data as any;
+    } catch (error) {
+      console.warn('Failed to fetch revenue analytics, using defaults:', error);
+      return {
+        summary: { totalRevenue: 0, averagePrice: 0 },
+        monthlyTrends: [],
+        byType: [],
+        currency: 'RWF'
+      };
+    }
+  }, [filters]);
+
+  const fetchNewsletter = useCallback(async () => {
+    try {
+      const data = await analyticsService.getNewsletterAnalytics(filters as any);
+      return data as any;
+    } catch (error) {
+      console.warn('Failed to fetch newsletter analytics, using defaults:', error);
+      return {
+        summary: { totalSubscribers: 0, newSubscribers: 0, activeSubscribers: 0, unsubscribeRate: 0 },
+        trends: []
+      };
+    }
+  }, [filters]);
+
+  const fetchRealtime = useCallback(async () => {
+    try {
+      const data = await analyticsService.getRealtimeMetrics();
+      return data as any;
+    } catch (error) {
+      console.warn('Failed to fetch realtime metrics, using defaults:', error);
+      return { activeUsers: 0, systemLoad: 0, responseTime: 0, errorRate: 0, uptime: 0, timestamp: new Date().toISOString() };
+    }
+  }, []);
+
+  const fetchTrending = useCallback(async () => {
+    try {
+      const [properties, locations, agents, blogs] = await Promise.all([
+        analyticsService.getTrendingData('properties').catch(() => []),
+        analyticsService.getTrendingData('locations').catch(() => []),
+        analyticsService.getTrendingData('agents').catch(() => []),
+        analyticsService.getTrendingData('blogs').catch(() => []),
+      ]);
+      return { properties, locations, agents, blogs } as any;
+    } catch (error) {
+      console.warn('Failed to fetch trending data, using defaults:', error);
+      return { properties: [], locations: [], agents: [], blogs: [] };
+    }
+  }, []);
+
   const fetchSystemHealth = useCallback(async (): Promise<SystemHealth> => {
     try {
       return await analyticsService.getSystemHealth();
@@ -303,7 +424,12 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
       fetchPerformanceMetrics(),
       fetchTrendData(),
       fetchRecentActivity(),
-      fetchKPIs()
+      fetchKPIs(),
+      fetchAgentPerformance(),
+      fetchRevenue(),
+      fetchNewsletter(),
+      fetchRealtime(),
+      fetchTrending()
     ]);
 
     // Extract results or use defaults
@@ -318,7 +444,12 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
       performanceMetricsResult,
       trendsDataResult,
       recentActivityResult,
-      kpisResult
+      kpisResult,
+      agentPerformanceResult,
+      revenueResult,
+      newsletterResult,
+      realtimeResult,
+      trendingResult
     ] = results;
 
     const overview = overviewResult.status === 'fulfilled' ? overviewResult.value : generateDefaultOverview();
@@ -332,6 +463,11 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
     const trendsData = trendsDataResult.status === 'fulfilled' ? trendsDataResult.value : generateDefaultTrendData();
     const recentActivity = recentActivityResult.status === 'fulfilled' ? recentActivityResult.value : generateDefaultRecentActivity();
     const kpis = kpisResult.status === 'fulfilled' ? kpisResult.value : generateDefaultKPIs();
+    const agentPerformance = agentPerformanceResult.status === 'fulfilled' ? (agentPerformanceResult.value as any) : { agents: [] };
+    const revenue = revenueResult.status === 'fulfilled' ? (revenueResult.value as any) : { summary: { totalRevenue: 0, averagePrice: 0 }, monthlyTrends: [], byType: [] };
+    const newsletter = newsletterResult.status === 'fulfilled' ? (newsletterResult.value as any) : { summary: { totalSubscribers: 0, newSubscribers: 0, activeSubscribers: 0, unsubscribeRate: 0 }, trends: [] };
+    const realtime = realtimeResult.status === 'fulfilled' ? (realtimeResult.value as any) : { activeUsers: 0, systemLoad: 0, timestamp: new Date().toISOString() };
+    const trending = trendingResult.status === 'fulfilled' ? (trendingResult.value as any) : { properties: [], locations: [], agents: [], blogs: [] };
 
     // Log any failures for debugging
     results.forEach((result, index) => {
@@ -339,7 +475,8 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
         const endpointNames = [
           'dashboard overview', 'user analytics', 'property analytics', 'blog analytics',
           'contact analytics', 'email analytics', 'system health', 'performance metrics',
-          'trend data', 'recent activity', 'KPIs'
+          'trend data', 'recent activity', 'KPIs', 'agent performance', 'revenue analytics',
+          'newsletter analytics', 'realtime metrics', 'trending data'
         ];
         console.warn(`Analytics endpoint "${endpointNames[index]}" failed, using default data:`, result.reason);
       }
@@ -357,7 +494,12 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
       recentActivity,
       trendsData,
       kpis,
-      chartData: {}
+      chartData: {},
+      agentPerformance,
+      revenue,
+      newsletter,
+      realtime,
+      trending
     };
   }, [
     fetchDashboardOverview,
@@ -371,6 +513,11 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
     fetchTrendData,
     fetchRecentActivity,
     fetchKPIs,
+    fetchAgentPerformance,
+    fetchRevenue,
+    fetchNewsletter,
+    fetchRealtime,
+    fetchTrending,
     generateDefaultOverview,
     generateDefaultUserAnalytics,
     generateDefaultPropertyAnalytics,

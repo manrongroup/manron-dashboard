@@ -16,15 +16,38 @@ import {
 } from '@/types';
 
 class AnalyticsService {
-    private baseUrl = '/analytics';
+    private baseUrls = ['/realestate/analytics', '/realestate/analytics'];
+
+    private unwrap<T>(response: any): T {
+        return (response?.data?.data ?? response?.data) as T;
+    }
+
+    private mapFilters(filters?: AnalyticsFilters): any {
+        if (!filters) return undefined;
+        const { dateRange, ...rest } = filters as any;
+        return { period: dateRange, ...rest };
+    }
+
+    private async getWithFallback<T>(path: string, params?: any): Promise<T> {
+        let lastError: any;
+        for (const base of this.baseUrls) {
+            try {
+                const response = await api.get(`${base}${path}`, { params });
+                return this.unwrap<T>(response);
+            } catch (err: any) {
+                lastError = err;
+                // Try next base
+                continue;
+            }
+        }
+        throw lastError;
+    }
 
     // Dashboard Overview
     async getDashboardOverview(filters?: AnalyticsFilters): Promise<AnalyticsOverview> {
         try {
-            const response = await api.get(`${this.baseUrl}/dashboard/overview`, {
-                params: filters
-            });
-            return response.data;
+            const data = await this.getWithFallback<any>(`/dashboard/overview`, this.mapFilters(filters));
+            return (data?.overview ?? data) as AnalyticsOverview;
         } catch (error) {
             console.error('Failed to fetch dashboard overview:', error);
             throw error;
@@ -34,10 +57,7 @@ class AnalyticsService {
     // User Analytics
     async getUserAnalytics(filters?: AnalyticsFilters): Promise<UserAnalytics> {
         try {
-            const response = await api.get(`${this.baseUrl}/users/engagement`, {
-                params: filters
-            });
-            return response.data;
+            return await this.getWithFallback<UserAnalytics>(`/users/engagement`, this.mapFilters(filters));
         } catch (error) {
             console.error('Failed to fetch user analytics:', error);
             throw error;
@@ -47,10 +67,7 @@ class AnalyticsService {
     // Property Analytics
     async getPropertyAnalytics(filters?: AnalyticsFilters): Promise<PropertyAnalytics> {
         try {
-            const response = await api.get(`${this.baseUrl}/properties`, {
-                params: filters
-            });
-            return response.data;
+            return await this.getWithFallback<PropertyAnalytics>(`/properties`, this.mapFilters(filters));
         } catch (error) {
             console.error('Failed to fetch property analytics:', error);
             throw error;
@@ -60,10 +77,7 @@ class AnalyticsService {
     // Blog Analytics
     async getBlogAnalytics(filters?: AnalyticsFilters): Promise<BlogAnalytics> {
         try {
-            const response = await api.get(`${this.baseUrl}/blogs`, {
-                params: filters
-            });
-            return response.data;
+            return await this.getWithFallback<BlogAnalytics>(`/blogs`, this.mapFilters(filters));
         } catch (error) {
             console.error('Failed to fetch blog analytics:', error);
             throw error;
@@ -73,10 +87,7 @@ class AnalyticsService {
     // Contact Analytics
     async getContactAnalytics(filters?: AnalyticsFilters): Promise<ContactAnalytics> {
         try {
-            const response = await api.get(`${this.baseUrl}/contacts`, {
-                params: filters
-            });
-            return response.data;
+            return await this.getWithFallback<ContactAnalytics>(`/contacts`, this.mapFilters(filters));
         } catch (error) {
             console.error('Failed to fetch contact analytics:', error);
             throw error;
@@ -86,10 +97,7 @@ class AnalyticsService {
     // Email Analytics
     async getEmailAnalytics(filters?: AnalyticsFilters): Promise<EmailAnalytics> {
         try {
-            const response = await api.get(`${this.baseUrl}/emails`, {
-                params: filters
-            });
-            return response.data;
+            return await this.getWithFallback<EmailAnalytics>(`/emails`, this.mapFilters(filters));
         } catch (error) {
             console.error('Failed to fetch email analytics:', error);
             throw error;
@@ -99,8 +107,7 @@ class AnalyticsService {
     // System Health
     async getSystemHealth(): Promise<SystemHealth> {
         try {
-            const response = await api.get(`${this.baseUrl}/system/health`);
-            return response.data;
+            return await this.getWithFallback<SystemHealth>(`/system/health`);
         } catch (error) {
             console.error('Failed to fetch system health:', error);
             throw error;
@@ -110,8 +117,7 @@ class AnalyticsService {
     // Performance Metrics
     async getPerformanceMetrics(): Promise<PerformanceMetrics> {
         try {
-            const response = await api.get(`${this.baseUrl}/performance`);
-            return response.data;
+            return await this.getWithFallback<PerformanceMetrics>(`/performance`);
         } catch (error) {
             console.error('Failed to fetch performance metrics:', error);
             throw error;
@@ -121,10 +127,7 @@ class AnalyticsService {
     // Trend Data
     async getTrendData(filters?: AnalyticsFilters): Promise<TrendData> {
         try {
-            const response = await api.get(`${this.baseUrl}/trends`, {
-                params: filters
-            });
-            return response.data;
+            return await this.getWithFallback<TrendData>(`/trends`, this.mapFilters(filters));
         } catch (error) {
             console.error('Failed to fetch trend data:', error);
             throw error;
@@ -134,10 +137,7 @@ class AnalyticsService {
     // Recent Activity
     async getRecentActivity(limit: number = 10): Promise<RecentActivity[]> {
         try {
-            const response = await api.get(`${this.baseUrl}/recent-activity`, {
-                params: { limit }
-            });
-            return response.data;
+            return await this.getWithFallback<RecentActivity[]>(`/recent-activity`, { limit });
         } catch (error) {
             console.error('Failed to fetch recent activity:', error);
             throw error;
@@ -147,10 +147,7 @@ class AnalyticsService {
     // KPIs
     async getKPIs(filters?: AnalyticsFilters): Promise<KPI[]> {
         try {
-            const response = await api.get(`${this.baseUrl}/kpis`, {
-                params: filters
-            });
-            return response.data;
+            return await this.getWithFallback<KPI[]>(`/kpis`, this.mapFilters(filters));
         } catch (error) {
             console.error('Failed to fetch KPIs:', error);
             throw error;
@@ -160,10 +157,7 @@ class AnalyticsService {
     // Chart Data
     async getChartData(type: string, filters?: AnalyticsFilters): Promise<ChartData> {
         try {
-            const response = await api.get(`${this.baseUrl}/charts/${type}`, {
-                params: filters
-            });
-            return response.data;
+            return await this.getWithFallback<ChartData>(`/charts/${type}`, this.mapFilters(filters));
         } catch (error) {
             console.error('Failed to fetch chart data:', error);
             throw error;
@@ -178,8 +172,9 @@ class AnalyticsService {
         includeCharts?: boolean;
     }): Promise<any> {
         try {
-            const response = await api.post(`${this.baseUrl}/reports/custom`, reportConfig);
-            return response.data;
+            // POST doesn't need fallback; assume main base under /analytics
+            const response = await api.post(`${this.baseUrls[0]}/reports/custom`, reportConfig);
+            return this.unwrap<any>(response);
         } catch (error) {
             console.error('Failed to generate custom report:', error);
             throw error;
@@ -193,11 +188,21 @@ class AnalyticsService {
         filters?: AnalyticsFilters
     ): Promise<Blob> {
         try {
-            const response = await api.get(`${this.baseUrl}/export/${type}`, {
-                params: { ...filters, format },
-                responseType: 'blob'
-            });
-            return response.data;
+            // Export endpoint path differs; use fallback bases manually
+            let lastError: any;
+            for (const base of this.baseUrls) {
+                try {
+                    const response = await api.get(`${base}/export/${type}`, {
+                        params: { ...this.mapFilters(filters), format },
+                        responseType: 'blob'
+                    });
+                    return response.data;
+                } catch (err) {
+                    lastError = err;
+                    continue;
+                }
+            }
+            throw lastError;
         } catch (error) {
             console.error('Failed to export data:', error);
             throw error;
@@ -213,8 +218,7 @@ class AnalyticsService {
         uptime: number;
     }> {
         try {
-            const response = await api.get(`${this.baseUrl}/realtime`);
-            return response.data;
+            return await this.getWithFallback<any>(`/realtime`);
         } catch (error) {
             console.error('Failed to fetch real-time metrics:', error);
             throw error;
@@ -222,10 +226,9 @@ class AnalyticsService {
     }
 
     // Trending Data
-    async getTrendingData(type: 'content' | 'locations' | 'searches'): Promise<any[]> {
+    async getTrendingData(type: 'properties' | 'locations' | 'agents' | 'blogs'): Promise<any[]> {
         try {
-            const response = await api.get(`${this.baseUrl}/trending/${type}`);
-            return response.data;
+            return await this.getWithFallback<any[]>(`/trending`, { type });
         } catch (error) {
             console.error('Failed to fetch trending data:', error);
             throw error;
@@ -250,10 +253,7 @@ class AnalyticsService {
         };
     }> {
         try {
-            const response = await api.get(`${this.baseUrl}/agents/performance`, {
-                params: filters
-            });
-            return response.data;
+            return await this.getWithFallback<any>(`/agents/performance`, this.mapFilters(filters));
         } catch (error) {
             console.error('Failed to fetch agent performance:', error);
             throw error;
@@ -276,10 +276,7 @@ class AnalyticsService {
         }>;
     }> {
         try {
-            const response = await api.get(`${this.baseUrl}/revenue`, {
-                params: filters
-            });
-            return response.data;
+            return await this.getWithFallback<any>(`/revenue`, this.mapFilters(filters));
         } catch (error) {
             console.error('Failed to fetch revenue analytics:', error);
             throw error;
@@ -301,10 +298,7 @@ class AnalyticsService {
         }>;
     }> {
         try {
-            const response = await api.get(`${this.baseUrl}/newsletters`, {
-                params: filters
-            });
-            return response.data;
+            return await this.getWithFallback<any>(`/newsletters`, this.mapFilters(filters));
         } catch (error) {
             console.error('Failed to fetch newsletter analytics:', error);
             throw error;

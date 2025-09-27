@@ -57,6 +57,18 @@ const PERMISSIONS: Record<string, string[]> = {
     'security_management'
   ],
   admin: [
+    'manage_content',
+    'manage_properties',
+    'manage_blogs',
+    'manage_contacts',
+    'manage_emails',
+    'view_analytics',
+    'export_data',
+    'system_settings',
+    'audit_logs',
+    'security_management'
+  ],
+    client: [
     'manage_users',
     'manage_agents',
     'manage_content',
@@ -146,9 +158,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setIsLoading(true);
       const response = await api.post('/login', { email, password });
-
-      const { token, user: userData } = response.data;
-
+    
+      const { token, user: userData } = response.data.data;
+      console.log(token, userData);
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(userData));
       setUser(userData);
@@ -228,7 +240,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (!user) return false;
 
     // Super admin can access everything
-    if (user.role === 'superAdmin') return true;
+    if (user.role === 'superAdmin' || user.role === 'admin') return true;
 
     // Check if user has permission for the resource
     const resourcePermission = `manage_${resource}`;

@@ -28,9 +28,17 @@ const addAuthToken = (config: any) => {
 
 const errorHandler = (error: any) => {
   if (error.response?.status === 401) {
+    const hadToken = !!localStorage.getItem('token');
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    window.location.href = '/login';
+    // Avoid redirect loops: only navigate to /login if we're not already there
+    // and only if there was an auth token (i.e., a real session expiry scenario)
+    if (typeof window !== 'undefined') {
+      const currentPath = window.location.pathname;
+      if (currentPath !== '/login' && hadToken) {
+        window.location.href = '/login';
+      }
+    }
   }
   return Promise.reject(error);
 };

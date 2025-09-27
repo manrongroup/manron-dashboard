@@ -125,6 +125,7 @@ export default function RealEstateManagement() {
         <StatCard title="Rented" value={rented} icon={Key} />
       </div>
 
+      <div className=' max-w-[1400px] h-full w-full'>
       <RealEstateTable
         properties={filteredRealEstate}
         onDelete={handleDelete}
@@ -133,6 +134,7 @@ export default function RealEstateManagement() {
           setIsCreateDialogOpen(true);
         }}
       />
+      </div>
 
     </div>
   );
