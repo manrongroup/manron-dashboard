@@ -76,7 +76,9 @@ export default function AgentManagement() {
             await deleteAgent(deleteTarget.id);
             await fetchAgents();
             setDeleteTarget(null);
-        } catch { }
+        } catch (error) {
+            console.error('Failed to delete agent:', error);
+        }
     };
 
     if (loading) {
@@ -103,25 +105,25 @@ export default function AgentManagement() {
                 {/* Active Agents */}
                 <StatCard
                     title="Active Agents"
-                    value={agents.filter(a => a.status === "Active").length}
+                    value={agents.filter(a => (a as any).status === "Active").length}
                     icon={UserCheck}
                 />
 
                 {/* Average Rating */}
                 <StatCard
                     title="Avg. Rating"
-                    value={(agents.reduce((sum, a) => sum + (a.rating || 0), 0) / agents.length).toFixed(1)}
+                    value={(agents.reduce((sum, a) => sum + ((a as any).rating || 0), 0) / agents.length).toFixed(1)}
                     icon={Star}
                 />
 
                 {/* Total Reviews */}
                 <StatCard
                     title="Total Reviews"
-                    value={agents.reduce((sum, a) => sum + (a.totalReviews || 0), 0)}
+                    value={agents.reduce((sum, a) => sum + ((a as any).totalReviews || 0), 0)}
                     icon={MessageSquare}
                 />
 
-           
+
             </div>
 
 
@@ -179,6 +181,7 @@ export default function AgentManagement() {
                     setSelectedRecipientId(a.id || a._id);
                     setIsEmailDialogOpen(true);
                 }}
+                onCreate={() => setIsCreateDialogOpen(true)}
             />
 
             {/* Edit agent dialog */}

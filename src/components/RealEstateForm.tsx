@@ -87,7 +87,7 @@ const getYouTubeThumbnail = (youtubeId: string) => {
 
 // Extract YouTube ID helper
 const extractYoutubeId = (url: string): string | null => {
-  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
   const match = url.match(regExp);
   return match && match[2].length === 11 ? match[2] : null;
 };
@@ -652,17 +652,17 @@ export function RealEstateForm({ property, onSubmit, onCancel }: RealEstateFormP
                     />
                     <Label htmlFor="petsConsidered">Pets Considered</Label>
 
-</div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="isDeal"
-                        checked={watchedIsDeal}
-                        onCheckedChange={(checked) => setValue("isDeal", checked === true)} // update form value
-                      />
-                      <Label htmlFor="isDeal">Special Deal</Label>
-                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="isDeal"
+                      checked={watchedIsDeal}
+                      onCheckedChange={(checked) => setValue("isDeal", checked === true)} // update form value
+                    />
+                    <Label htmlFor="isDeal">Special Deal</Label>
+                  </div>
 
-                  
+
 
                   {watchedIsDeal && (
                     <div>

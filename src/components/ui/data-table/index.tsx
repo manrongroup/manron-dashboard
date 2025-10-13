@@ -78,7 +78,7 @@ export interface DataTableProps<TData extends Record<string, any>, TValue = any>
     title?: string;
     description?: string;
     className?: string;
-    onRowClick?: (row:any) => void;
+    onRowClick?: (row: any) => void;
     onRowSelect?: (selectedRows: TData[]) => void;
     customActions?: CustomAction[];
 }
@@ -116,7 +116,9 @@ const Button: React.FC<ButtonProps> = ({
     </button>
 );
 
-interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> { }
+interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+    className?: string;
+}
 
 const Input: React.FC<InputProps> = ({ className = "", ...props }) => (
     <input

@@ -26,9 +26,10 @@ interface BlogsTableProps {
   blogs: Blog[];
   onDelete: (id: string) => void;
   onEdit: (blog: Blog) => void;
+  onCreate?: () => void;
 }
 
-const BlogsTable: React.FC<BlogsTableProps> = ({ blogs, onDelete, onEdit }) => {
+const BlogsTable: React.FC<BlogsTableProps> = ({ blogs, onDelete, onEdit, onCreate }) => {
   const [selectedBlogs, setSelectedBlogs] = useState<Blog[]>([]);
 
   const handleRowClick = useCallback((row: Blog) => {
@@ -193,6 +194,14 @@ const BlogsTable: React.FC<BlogsTableProps> = ({ blogs, onDelete, onEdit }) => {
         onRowClick={handleRowClick}
         onRowSelect={handleRowSelect}
         className="w-full"
+        customActions={onCreate ? [
+          {
+            label: "Create Blog",
+            icon: <Plus className="h-4 w-4" />,
+            onClick: onCreate,
+            variant: "default" as const,
+          }
+        ] : []}
       />
 
       {selectedBlogs.length > 0 && (

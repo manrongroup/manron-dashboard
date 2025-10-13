@@ -50,7 +50,7 @@ export default function RealEstateManagement() {
     }
   };
 
-    // ✅ Real Estate Stats
+  // ✅ Real Estate Stats
   const total = realEstate.length;
   const available = realEstate.filter((p) => p.status === 'Available').length;
   const sold = realEstate.filter((p) => p.saleMethod === 'Sold').length;
@@ -66,7 +66,7 @@ export default function RealEstateManagement() {
 
   console.log("Filtered Real Estate Properties:", filteredRealEstate);
   console.log("All Real Estate Properties:", realEstate);
-;
+  ;
 
   if (loading) {
     return (
@@ -89,7 +89,10 @@ export default function RealEstateManagement() {
             if (!open) setEditingProperty(null);
           }}>
             <DialogTrigger asChild>
-              <Button className="flex items-center gap-2">
+              <Button className="flex items-center gap-2" onClick={() => {
+                setEditingProperty(null);
+                setIsCreateDialogOpen(true);
+              }}>
                 <Plus className="w-4 h-4" />
                 Add Property
               </Button>
@@ -99,11 +102,11 @@ export default function RealEstateManagement() {
                 <DialogTitle>{editingProperty ? "Edit Property" : "Create New Property"}</DialogTitle>
               </DialogHeader>
               <RealEstateForm
-                property={editingProperty}
-                onSubmit={() => {
+                property={editingProperty as any}
+                onSubmit={async () => {
                   setIsCreateDialogOpen(false);
                   setEditingProperty(null);
-                  fetchRealEstate();
+                  await fetchRealEstate();
                 }}
                 onCancel={() => {
                   setIsCreateDialogOpen(false);
@@ -117,7 +120,7 @@ export default function RealEstateManagement() {
 
       </div>
 
-            {/* ✅ Stats Cards */}
+      {/* ✅ Stats Cards */}
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard title="Total Properties" value={total} icon={Home} />
         <StatCard title="Available" value={available} icon={CheckCircle} />
@@ -126,14 +129,18 @@ export default function RealEstateManagement() {
       </div>
 
       <div className=' max-w-[1400px] h-full w-full'>
-      <RealEstateTable
-        properties={filteredRealEstate}
-        onDelete={handleDelete}
-        onEdit={(property) => {
-          setEditingProperty(property as any);
-          setIsCreateDialogOpen(true);
-        }}
-      />
+        <RealEstateTable
+          properties={filteredRealEstate}
+          onDelete={handleDelete}
+          onEdit={(property) => {
+            setEditingProperty(property as any);
+            setIsCreateDialogOpen(true);
+          }}
+          onCreate={() => {
+            setEditingProperty(null);
+            setIsCreateDialogOpen(true);
+          }}
+        />
       </div>
 
     </div>

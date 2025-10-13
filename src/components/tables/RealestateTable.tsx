@@ -10,12 +10,14 @@ interface RealEstateTableProps {
     properties: Property[];
     onDelete: (id: string) => void;
     onEdit: (property: Property) => void;
+    onCreate?: () => void;
 }
 
 const RealEstateTable: React.FC<RealEstateTableProps> = ({
     properties,
     onDelete,
     onEdit,
+    onCreate,
 }) => {
     const [selectedProperties, setSelectedProperties] = useState<Property[]>([]);
 
@@ -222,6 +224,14 @@ const RealEstateTable: React.FC<RealEstateTableProps> = ({
                 onRowClick={handleRowClick}
                 onRowSelect={handleRowSelect}
                 className="w-full"
+                customActions={onCreate ? [
+                    {
+                        label: "Add Property",
+                        icon: <Plus className="h-4 w-4" />,
+                        onClick: onCreate,
+                        variant: "default" as const,
+                    }
+                ] : []}
             />
 
             {selectedProperties.length > 0 && (

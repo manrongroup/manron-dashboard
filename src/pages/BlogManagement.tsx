@@ -111,7 +111,8 @@ export default function BlogManagement() {
         <BlogsTable
           blogs={filteredBlogs}
           onEdit={(blog) => { setSelectedBlog(blog._id); setIsEditDialogOpen(true); }}
-          onDelete={(blog) => setDeleteBlog(blog._id)} 
+          onDelete={(blog) => setDeleteBlog(blog._id)}
+          onCreate={() => setIsCreateDialogOpen(true)}
         />
       </div>
 

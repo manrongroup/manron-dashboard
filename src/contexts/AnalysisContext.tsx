@@ -25,7 +25,7 @@ interface AnalyticsStats {
   userStats: UserAnalytics;
   propertyStats: PropertyAnalytics;
   blogStats: BlogAnalytics;
-  totalSubscribers:any
+  totalSubscribers: number;
   contactStats: ContactAnalytics;
   emailStats: EmailAnalytics;
   systemHealth: SystemHealth;
@@ -60,7 +60,7 @@ interface AnalyticsStats {
       soldCount?: number;
       rentedCount?: number;
     };
-    monthlyTrends: Array<{ _id?: any; revenue?: number; count?: number; year?: number; month?: number }>;
+    monthlyTrends: Array<{ _id?: string | number; revenue?: number; count?: number; year?: number; month?: number }>;
     byType: Array<{ _id?: string; revenue: number; count: number }>;
     currency?: string;
   } | null;
@@ -71,20 +71,20 @@ interface AnalyticsStats {
       activeSubscribers: number;
       unsubscribeRate: number;
     };
-    trends: Array<{ _id?: any; count?: number; year?: number; month?: number }>
+    trends: Array<{ _id?: string | number; count?: number; year?: number; month?: number }>
   } | null;
   realtime: {
     activeUsers: number;
     recentProperties?: number;
     recentInquiries?: number;
-    systemLoad: any;
+    systemLoad: number;
     timestamp: string;
   } | null;
   trending: {
-    properties?: any[];
-    locations?: any[];
-    agents?: any[];
-    blogs?: any[];
+    properties?: unknown[];
+    locations?: unknown[];
+    agents?: unknown[];
+    blogs?: unknown[];
   } | null;
 }
 

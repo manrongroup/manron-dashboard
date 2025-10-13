@@ -2,17 +2,19 @@
 'use client';
 import React, { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash2, Shield } from 'lucide-react';
+import { Edit, Trash2, Shield, Mail, Plus } from 'lucide-react';
 import { DataTable } from '../ui/data-table';
 import { User as UserType } from '@/types';
 
 interface UsersTableProps {
   users: UserType[];
   onEdit: (user: UserType) => void;
-  onDelete: (id: string) => void;
+  onDelete: (user: UserType) => void;
+  onEmail?: (user: UserType) => void;
+  onCreate?: () => void;
 }
 
-const UsersTable: React.FC<UsersTableProps> = ({ users, onEdit, onDelete }) => {
+const UsersTable: React.FC<UsersTableProps> = ({ users, onEdit, onDelete, onEmail, onCreate }) => {
   const [selectedUsers, setSelectedUsers] = useState<UserType[]>([]);
 
   const handleRowSelect = useCallback((rows: UserType[]) => {
@@ -92,11 +94,16 @@ const UsersTable: React.FC<UsersTableProps> = ({ users, onEdit, onDelete }) => {
             <Button variant="ghost" size="sm" onClick={() => onEdit(user)}>
               <Edit className="h-4 w-4 mr-1" /> Edit
             </Button>
+            {onEmail && (
+              <Button variant="ghost" size="sm" onClick={() => onEmail(user)}>
+                <Mail className="h-4 w-4 mr-1" /> Email
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="sm"
               className="text-red-600 hover:text-red-700"
-              onClick={() => onDelete(user._id)}
+              onClick={() => onDelete(user)}
             >
               <Trash2 className="h-4 w-4 mr-1" /> Delete
             </Button>
@@ -133,6 +140,14 @@ const UsersTable: React.FC<UsersTableProps> = ({ users, onEdit, onDelete }) => {
           pageSizeOptions: [5, 10, 20],
         }}
         onRowSelect={handleRowSelect}
+        customActions={onCreate ? [
+          {
+            label: "Add User",
+            icon: <Plus className="h-4 w-4" />,
+            onClick: onCreate,
+            variant: "default" as const,
+          }
+        ] : []}
       />
     </div>
 

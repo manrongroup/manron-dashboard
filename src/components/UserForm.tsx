@@ -14,7 +14,7 @@ const userSchema = z.object({
   fullname: z.string().min(1, 'Full name is required'),
   email: z.string().email('Invalid email address'),
   telephone: z.string().optional(),
-  role: z.enum(['superAdmin', 'admin', 'worker', 'user', 'client']),
+  role: z.enum(['superAdmin', 'admin', 'worker', 'user', 'client', 'agent']),
   password: z.string().min(6, 'Password must be at least 6 characters').optional(),
 });
 
@@ -23,9 +23,10 @@ type UserFormData = z.infer<typeof userSchema>;
 interface UserFormProps {
   user?: User; // should include id
   onSuccess: () => void;
+  isAgentForm?: boolean;
 }
 
-export function UserForm({ user, onSuccess }: UserFormProps) {
+export function UserForm({ user, onSuccess, isAgentForm = false }: UserFormProps) {
   const { toast } = useToast();
 
   const form = useForm<UserFormData>({
@@ -34,7 +35,7 @@ export function UserForm({ user, onSuccess }: UserFormProps) {
       fullname: user?.fullname || '',
       email: user?.email || '',
       telephone: user?.telephone || '',
-      role: user?.role || 'user',
+      role: user?.role || (isAgentForm ? 'agent' : 'user'),
       password: '',
     },
   });
@@ -131,11 +132,15 @@ export function UserForm({ user, onSuccess }: UserFormProps) {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {/* <SelectItem value="user">User</SelectItem>
-                    <SelectItem value="worker">Worker</SelectItem> */}
-                    <SelectItem value="admin">Admin</SelectItem>
-                    <SelectItem value="superAdmin">Super Admin</SelectItem>
-                    <SelectItem value="client">Client</SelectItem>
+                    {isAgentForm ? (
+                      <SelectItem value="agent">Agent</SelectItem>
+                    ) : (
+                      <>
+                        <SelectItem value="admin">Admin</SelectItem>
+                        <SelectItem value="superAdmin">Super Admin</SelectItem>
+                        <SelectItem value="client">Client</SelectItem>
+                      </>
+                    )}
                   </SelectContent>
                 </Select>
                 <FormMessage />

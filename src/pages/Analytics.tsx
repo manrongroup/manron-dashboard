@@ -161,19 +161,137 @@ export default function Analytics() {
     if (!stats) return null;
 
     return {
-      overview: stats.overview || {},
-      userStats: stats.userStats || {},
-      propertyStats: stats.propertyStats || {},
-      blogStats: stats.blogStats || {},
-      contactStats: stats.contactStats || {},
-      emailStats: stats.emailStats || {},
-      systemHealth: stats.systemHealth || {},
+      overview: stats.overview || {
+        totalUsers: 0,
+        totalProperties: 0,
+        totalBlogs: 0,
+        totalContacts: 0,
+        totalEmailsSent: 0,
+        activeAgents: 0,
+        publishedBlogs: 0,
+        pendingContacts: 0,
+        growthRate: 0,
+        conversionRate: 0,
+        revenue: 0,
+        monthlyRevenue: 0,
+        systemHealth: 95,
+        responseTime: 200,
+        uptime: 99.9,
+        errorRate: 0.1
+      },
+      userStats: stats.userStats || {
+        totalUsers: 0,
+        newUsersThisMonth: 0,
+        activeUsers: 0,
+        userGrowthRate: 0,
+        usersByCategory: [],
+        userEngagement: {
+          dailyActiveUsers: 0,
+          weeklyActiveUsers: 0,
+          monthlyActiveUsers: 0
+        },
+        userRetention: {
+          day1: 0,
+          day7: 0,
+          day30: 0
+        }
+      },
+      propertyStats: stats.propertyStats || {
+        totalProperties: 0,
+        featuredProperties: 0,
+        recentProperties: 0,
+        propertiesGrowthRate: 0,
+        propertiesByStatus: [],
+        propertiesByType: [],
+        averagePrice: 0,
+        priceRange: { min: 0, max: 0, average: 0 },
+        topLocations: []
+      },
+      blogStats: stats.blogStats || {
+        totalBlogs: 0,
+        publishedBlogs: 0,
+        draftBlogs: 0,
+        blogGrowthRate: 0,
+        blogsByCategory: [],
+        recentBlogActivity: [],
+        topPerformingBlogs: [],
+        contentPerformance: {
+          averageReadTime: 0,
+          bounceRate: 0,
+          engagementRate: 0
+        }
+      },
+      contactStats: stats.contactStats || {
+        totalContacts: 0,
+        newContacts: 0,
+        resolvedContacts: 0,
+        pendingContacts: 0,
+        contactGrowthRate: 0,
+        contactsByStatus: [],
+        contactsByPriority: [],
+        contactTrends: [],
+        responseTime: { average: 0, median: 0, p95: 0 },
+        conversionRate: 0
+      },
+      emailStats: stats.emailStats || {
+        totalEmailsSent: 0,
+        successfulEmails: 0,
+        failedEmails: 0,
+        emailSuccessRate: 0,
+        emailsByCategory: [],
+        emailTrends: [],
+        openRate: 0,
+        clickRate: 0,
+        unsubscribeRate: 0,
+        bounceRate: 0
+      },
+      systemHealth: stats.systemHealth || {
+        systemHealth: 95,
+        responseTime: 200,
+        uptime: 99.9,
+        errorRate: 0.1,
+        memoryUsage: 60,
+        cpuUsage: 40,
+        diskUsage: 50,
+        databaseConnections: 10,
+        activeSessions: 25
+      },
       agentPerformance: stats.agentPerformance || { agents: [] },
-      revenue: stats.revenue || { summary: {}, monthlyTrends: [], byType: [] },
-      newsletter: stats.newsletter || { summary: {}, trends: [] },
-      realtime: stats.realtime || {},
-      trending: stats.trending || {},
-      recentActivity: stats.recentActivity || {}
+      revenue: stats.revenue || {
+        summary: {
+          totalRevenue: 0,
+          averagePrice: 0,
+          medianPrice: 0,
+          priceRange: { min: 0, max: 0 },
+          soldCount: 0,
+          rentedCount: 0
+        },
+        monthlyTrends: [],
+        byType: []
+      },
+      newsletter: stats.newsletter || {
+        summary: {
+          totalSubscribers: 0,
+          newSubscribers: 0,
+          activeSubscribers: 0,
+          unsubscribeRate: 0
+        },
+        trends: []
+      },
+      realtime: stats.realtime || {
+        activeUsers: 0,
+        recentProperties: 0,
+        recentInquiries: 0,
+        systemLoad: 0,
+        timestamp: new Date().toISOString()
+      },
+      trending: stats.trending || {
+        properties: [],
+        locations: [],
+        agents: [],
+        blogs: []
+      },
+      recentActivity: stats.recentActivity || []
     };
   }, [stats]);
 
@@ -286,9 +404,9 @@ export default function Analytics() {
         name: `${item.year}-${String(item.month).padStart(2, '0')}`,
         revenue: item.revenue || 0,
         count: item.count || 0,
-        date: new Date(item.year, item.month - 1).toLocaleDateString('en-US', { 
-          month: 'short', 
-          year: 'numeric' 
+        date: new Date(item.year, item.month - 1).toLocaleDateString('en-US', {
+          month: 'short',
+          year: 'numeric'
         })
       })),
       revenueByType: (revenue.byType || []).map((item) => ({
@@ -297,20 +415,20 @@ export default function Analytics() {
         count: item.count || 0
       })),
       userDistribution: (userStats.usersByCategory || []).map((item) => ({
-        name: item.name || item._id || 'Unknown',
-        value: item.value || item.count || 0
+        name: item.name || 'Unknown',
+        value: item.value || 0
       })),
       propertyStatus: (propertyStats.propertiesByStatus || []).map((item) => ({
-        name: item.name || item._id || 'Unknown',
-        value: item.value || item.count || 0
+        name: item.name || 'Unknown',
+        value: item.value || 0
       })),
       propertyTypes: (propertyStats.propertiesByType || []).map((item) => ({
-        name: item.name || item._id || 'Unknown',
-        value: item.value || item.count || 0
+        name: item.name || 'Unknown',
+        value: item.value || 0
       })),
       blogCategories: (blogStats.blogsByCategory || []).map((item) => ({
-        name: item.name || item._id || 'Unknown',
-        value: item.value || item.count || 0
+        name: item.name || 'Unknown',
+        value: item.value || 0
       })),
       systemMetrics: [
         { name: 'CPU', value: systemHealth.cpuUsage || 40 },
@@ -492,13 +610,13 @@ export default function Analytics() {
               {formatPercentage(processedStats.overview.systemHealth)}
             </div>
             <div className="mt-2 space-y-1">
-              <Progress 
-                value={processedStats.overview.systemHealth || 0} 
-                className="h-2" 
+              <Progress
+                value={processedStats.overview.systemHealth || 0}
+                className="h-2"
               />
               <p className="text-xs text-muted-foreground">
-                {(processedStats.overview.systemHealth || 0) > 95 ? 'Excellent' : 
-                 (processedStats.overview.systemHealth || 0) > 80 ? 'Good' : 'Needs Attention'}
+                {(processedStats.overview.systemHealth || 0) > 95 ? 'Excellent' :
+                  (processedStats.overview.systemHealth || 0) > 80 ? 'Good' : 'Needs Attention'}
               </p>
             </div>
           </CardContent>
@@ -515,7 +633,7 @@ export default function Analytics() {
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               {(processedStats.overview.responseTime || 0) < 200 ? 'Excellent' :
-               (processedStats.overview.responseTime || 0) < 500 ? 'Good' : 'Needs attention'}
+                (processedStats.overview.responseTime || 0) < 500 ? 'Good' : 'Needs attention'}
             </p>
           </CardContent>
         </Card>
@@ -549,7 +667,7 @@ export default function Analytics() {
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               {(processedStats.overview.errorRate || 0) < 1 ? 'Excellent' :
-               (processedStats.overview.errorRate || 0) < 5 ? 'Good' : 'High error rate'}
+                (processedStats.overview.errorRate || 0) < 5 ? 'Good' : 'High error rate'}
             </p>
           </CardContent>
         </Card>
@@ -1044,8 +1162,8 @@ export default function Analytics() {
                       <span className="font-medium">{location.name}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Progress value={(location.count / (processedStats.propertyStats.topLocations[0]?.count || 1)) * 100} className="w-20 h-2" />
-                      <span className="text-sm font-semibold">{location.count}</span>
+                      <Progress value={(location.value / (processedStats.propertyStats.topLocations[0]?.value || 1)) * 100} className="w-20 h-2" />
+                      <span className="text-sm font-semibold">{location.value}</span>
                     </div>
                   </div>
                 ))}
@@ -1067,10 +1185,8 @@ export default function Analytics() {
                   <ResponsiveContainer width="100%" height="100%">
                     <RadialBarChart data={chartData.systemMetrics}>
                       <RadialBar
-                        minAngle={15}
                         label={{ position: 'insideStart', fill: '#fff' }}
                         background
-                        clockWise
                         dataKey="value"
                       />
                       <Legend iconSize={18} layout="horizontal" verticalAlign="bottom" />
@@ -1090,13 +1206,13 @@ export default function Analytics() {
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Status</span>
                   <Badge variant="secondary">
-                    {processedStats.systemHealth?.database?.status || 'healthy'}
+                    {processedStats.systemHealth?.databaseConnections ? 'healthy' : 'unknown'}
                   </Badge>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Response Time</span>
                   <span className="text-sm font-semibold">
-                    {processedStats.systemHealth?.database?.responseTime || 0}ms
+                    {processedStats.systemHealth?.responseTime || 0}ms
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
@@ -1125,7 +1241,7 @@ export default function Analytics() {
               <div className="grid gap-4 md:grid-cols-3">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-green-600">
-                    {processedStats.systemHealth?.uptime?.human || '0d 0h 0m'}
+                    {Math.floor(processedStats.systemHealth?.uptime || 0)}d {Math.floor(((processedStats.systemHealth?.uptime || 0) % 1) * 24)}h
                   </div>
                   <p className="text-sm text-muted-foreground">Current Uptime</p>
                 </div>
@@ -1281,7 +1397,7 @@ export default function Analytics() {
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-orange-600">
-                    {typeof processedStats.realtime.systemLoad === 'number' ? 
+                    {typeof processedStats.realtime.systemLoad === 'number' ?
                       `${processedStats.realtime.systemLoad.toFixed(1)}%` : 'N/A'}
                   </div>
                   <p className="text-sm text-muted-foreground">System Load</p>

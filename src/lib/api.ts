@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { AxiosRequestConfig, AxiosError } from 'axios';
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'https://manron-group-backend.onrender.com/api/v1';
 
@@ -18,7 +18,7 @@ const realEstateApi = axios.create({
 });
 
 // Request interceptor to add auth token
-const addAuthToken = (config: any) => {
+const addAuthToken = (config: AxiosRequestConfig) => {
   const token = localStorage.getItem('token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -26,7 +26,7 @@ const addAuthToken = (config: any) => {
   return config;
 };
 
-const errorHandler = (error: any) => {
+const errorHandler = (error: AxiosError) => {
   if (error.response?.status === 401) {
     const hadToken = !!localStorage.getItem('token');
     localStorage.removeItem('token');

@@ -293,7 +293,7 @@ export interface RecentActivity {
   status?: string;
   priority?: 'low' | 'medium' | 'high';
   user?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface TrendData {
@@ -392,7 +392,7 @@ export interface SecurityEvent {
   userAgent: string;
   resource?: string;
   action?: string;
-  details: Record<string, any>;
+  details: Record<string, unknown>;
   timestamp: string;
   severity: 'low' | 'medium' | 'high' | 'critical';
 }
@@ -416,7 +416,7 @@ export interface AuditLog {
   action: string;
   resource: string;
   resourceId: string;
-  changes?: Record<string, any>;
+  changes?: Record<string, unknown>;
   ipAddress: string;
   userAgent: string;
   timestamp: string;
