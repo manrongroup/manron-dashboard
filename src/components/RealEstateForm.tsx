@@ -230,7 +230,7 @@ export function RealEstateForm({ property, onSubmit, onCancel }: RealEstateFormP
     setFeatures(features.filter(f => f !== feature));
   };
 
-  // Property submission handler
+ 
   const onFormSubmit = async (data: RealEstateFormData) => {
     setLoading(true);
     try {
