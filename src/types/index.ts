@@ -39,22 +39,40 @@ export interface Blog {
 
 export interface RealEstate {
   _id: string;
+  code?: string;
   title: string;
   description: string;
+  type: 'House' | 'Townhouse' | 'Apartment & Unit' | 'Villa' | 'Land' | 'Rural' | 'Acreage' | 'Block Of Units' | 'Retirement Living';
+  saleMethod: 'Private treaty sale' | 'Auction' | 'Rent' | 'Sold';
+  status: 'Available' | 'Under contract' | 'Rented' | 'Sold';
   price: number;
-  location: string;
-  type: 'apartment' | 'house' | 'commercial' | 'land';
-  status: 'available' | 'sold' | 'rented' | 'pending';
+  currency: string;
+  paymentType: 'per_month' | 'one_time';
   bedrooms?: number;
   bathrooms?: number;
-  area: number;
-  images: string[];
-  features: string[];
-  contact: {
+  carSpaces?: number;
+  rooms?: number;
+  landSize?: number;
+  propertySize?: number;
+  yearBuilt?: number;
+  furnished?: boolean;
+  isDeal?: boolean;
+  dealExpires?: string;
+  petsConsidered?: boolean;
+  availableDate?: string;
+  soldDate?: string;
+  location: string;
+  city: string;
+  country: string;
+  latitude?: number;
+  longitude?: number;
+  agent: {
     name: string;
     phone: string;
     email: string;
   };
+  images: string[];
+  features: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -149,7 +167,6 @@ export interface AnalyticsOverview {
   conversionRate: number;
   revenue: number;
   monthlyRevenue: number;
-  systemHealth: number;
   responseTime: number;
   uptime: number;
   errorRate: number;
@@ -238,18 +255,6 @@ export interface EmailAnalytics {
   clickRate: number;
   unsubscribeRate: number;
   bounceRate: number;
-}
-
-export interface SystemHealth {
-  systemHealth: number;
-  responseTime: number;
-  uptime: number;
-  errorRate: number;
-  memoryUsage: number;
-  cpuUsage: number;
-  diskUsage: number;
-  databaseConnections: number;
-  activeSessions: number;
 }
 
 export interface AnalyticsCategory {

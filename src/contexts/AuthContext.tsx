@@ -68,7 +68,7 @@ const PERMISSIONS: Record<string, string[]> = {
     'audit_logs',
     'security_management'
   ],
-    client: [
+  client: [
     'manage_users',
     'manage_agents',
     'manage_content',
@@ -158,7 +158,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setIsLoading(true);
       const response = await api.post('/login', { email, password });
-    
+
       const { token, user: userData } = response.data.data;
       console.log(token, userData);
       localStorage.setItem('token', token);
@@ -178,8 +178,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         title: 'Success',
         description: 'Logged in successfully',
       });
-    } catch (error: any) {
-      const message = error.response?.data?.message || 'Login failed';
+    } catch (error: unknown) {
+      const axiosError = error as { response?: { data?: { message?: string } } };
+      const message = axiosError.response?.data?.message || 'Login failed';
 
       // Log failed login attempt
       logSecurityEvent({

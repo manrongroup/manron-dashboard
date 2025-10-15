@@ -54,7 +54,7 @@ export default function RealEstateManagement() {
   const total = realEstate.length;
   const available = realEstate.filter((p) => p.status === 'Available').length;
   const sold = realEstate.filter((p) => p.saleMethod === 'Sold').length;
-  const rented = realEstate.filter((p) => p.saleMethod === 'rented').length;
+  const rented = realEstate.filter((p) => p.status === 'Rented').length;
 
   const filteredRealEstate = realEstate.filter((property) => {
     const matchesSearch = property.title.toLowerCase().includes(searchTerm.toLowerCase()) ||

@@ -367,16 +367,22 @@ export class ExportService {
     ): void {
         const { filename = 'export.csv', includeHeaders = true } = options;
 
-        const headers = columns
-            .filter(col => col.accessorKey)
+        // Filter out image and agent columns for CSV export
+        const filteredColumns = columns.filter(col => {
+            const columnId = col.id || (col as any).accessorKey;
+            return columnId !== "images" && columnId !== "agent" && columnId !== "select" && columnId !== "actions";
+        });
+
+        const headers = filteredColumns
+            .filter(col => (col as any).accessorKey)
             .map(col => {
                 if (typeof col.header === 'string') return col.header;
-                return String(col.accessorKey);
+                return String((col as any).accessorKey);
             });
 
-        const accessors = columns
-            .filter(col => col.accessorKey)
-            .map(col => col.accessorKey as keyof T);
+        const accessors = filteredColumns
+            .filter(col => (col as any).accessorKey)
+            .map(col => (col as any).accessorKey as keyof T);
 
         let csvContent = '';
 
@@ -411,7 +417,12 @@ export class ExportService {
     ): void {
         const { filename = 'export.xlsx' } = options;
         console.log('Excel export would require SheetJS library');
-        this.exportToCSV(data, columns, { ...options, filename: filename.replace('.xlsx', '.csv') });
+        // Filter out image and agent columns for Excel export
+        const filteredColumns = columns.filter(col => {
+            const columnId = col.id || (col as any).accessorKey;
+            return columnId !== "images" && columnId !== "agent" && columnId !== "select" && columnId !== "actions";
+        });
+        this.exportToCSV(data, filteredColumns, { ...options, filename: filename.replace('.xlsx', '.csv') });
     }
 
     static exportToPDF<T extends Record<string, any>>(
@@ -422,25 +433,127 @@ export class ExportService {
         const { filename = 'export.pdf' } = options;
         console.log('PDF export would require jsPDF library');
 
-        const headers = columns
-            .filter(col => col.accessorKey)
-            .map(col => typeof col.header === 'string' ? col.header : String(col.accessorKey));
+        // Filter out image and agent columns for PDF export
+        const filteredColumns = columns.filter(col => {
+            const columnId = col.id || (col as any).accessorKey;
+            return columnId !== "images" && columnId !== "agent" && columnId !== "select" && columnId !== "actions";
+        });
 
-        const accessors = columns
-            .filter(col => col.accessorKey)
-            .map(col => col.accessorKey as keyof T);
+        const headers = filteredColumns
+            .filter(col => (col as any).accessorKey)
+            .map(col => typeof col.header === 'string' ? col.header : String((col as any).accessorKey));
+
+        const accessors = filteredColumns
+            .filter(col => (col as any).accessorKey)
+            .map(col => (col as any).accessorKey as keyof T);
 
         let htmlContent = `
       <html>
         <head>
           <title>${filename}</title>
           <style>
-            table { width: 100%; border-collapse: collapse; }
-            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-            th { background-color: #f2f2f2; font-weight: bold; }
+            body { 
+              font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+              margin: 0; 
+              padding: 20px; 
+              background-color: #f8f9fa;
+            }
+            .header {
+              background: linear-gradient(135deg, #16a085, #1abc9c);
+              color: white;
+              padding: 20px;
+              margin: -20px -20px 20px -20px;
+              text-align: center;
+              box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            .header h1 {
+              margin: 0;
+              font-size: 28px;
+              font-weight: bold;
+            }
+            .header p {
+              margin: 5px 0 0 0;
+              font-size: 14px;
+              opacity: 0.9;
+            }
+            .export-info {
+              background: white;
+              padding: 15px;
+              margin-bottom: 20px;
+              border-radius: 8px;
+              box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+              border-left: 4px solid #16a085;
+            }
+            table { 
+              width: 100%; 
+              border-collapse: collapse; 
+              background: white;
+              border-radius: 8px;
+              overflow: hidden;
+              box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            }
+            th { 
+              background: linear-gradient(135deg, #16a085, #1abc9c);
+              color: white;
+              padding: 12px 8px;
+              text-align: left;
+              font-weight: 600;
+              font-size: 12px;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+            }
+            td { 
+              padding: 10px 8px;
+              border-bottom: 1px solid #e9ecef;
+              font-size: 11px;
+              color: #495057;
+            }
+            /* Alternating two-color scheme */
+            td:nth-child(odd) { background-color: #f0f8ff !important; } /* Light blue for odd columns */
+            td:nth-child(even) { background-color: #f0fff0 !important; } /* Light green for even columns */
+            
+            /* Header colors - alternating scheme */
+            th:nth-child(odd) { background: linear-gradient(135deg, #4a90e2, #5ba0f2) !important; } /* Blue gradient for odd headers */
+            th:nth-child(even) { background: linear-gradient(135deg, #50c878, #60d888) !important; } /* Green gradient for even headers */
+            tr:nth-child(even) {
+              background-color: #f8f9fa;
+            }
+            tr:hover {
+              background-color: #e3f2fd;
+            }
+            .footer {
+              margin-top: 30px;
+              text-align: center;
+              color: #6c757d;
+              font-size: 10px;
+              border-top: 1px solid #dee2e6;
+              padding-top: 15px;
+            }
+            @media print {
+              body { background-color: white; }
+              .header { margin: 0 0 20px 0; }
+              .export-info { margin-bottom: 15px; }
+              /* Ensure colors are preserved when printing - two-color scheme */
+              td:nth-child(odd) { background-color: #f0f8ff !important; -webkit-print-color-adjust: exact; } /* Light blue for odd columns */
+              td:nth-child(even) { background-color: #f0fff0 !important; -webkit-print-color-adjust: exact; } /* Light green for even columns */
+              /* Header colors for print - alternating scheme */
+              th:nth-child(odd) { background: linear-gradient(135deg, #4a90e2, #5ba0f2) !important; -webkit-print-color-adjust: exact; } /* Blue gradient for odd headers */
+              th:nth-child(even) { background: linear-gradient(135deg, #50c878, #60d888) !important; -webkit-print-color-adjust: exact; } /* Green gradient for even headers */
+            }
           </style>
         </head>
         <body>
+          <div class="header">
+            <h1>Manron Real Estate</h1>
+            <p>Property List Export</p>
+          </div>
+          
+          <div class="export-info">
+            <strong>Export Details:</strong><br>
+            Generated on: ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}<br>
+            Total Properties: ${data.length}
+          </div>
+          
           <table>
             <thead>
               <tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>
@@ -448,14 +561,38 @@ export class ExportService {
             <tbody>
     `;
 
-        data.forEach(row => {
-            const cells = accessors.map(accessor => `<td>${row[accessor] ?? ''}</td>`).join('');
+        data.forEach((row, index) => {
+            const cells = accessors.map(accessor => {
+                const value = row[accessor];
+                let formattedValue = '';
+
+                if (value === null || value === undefined) {
+                    formattedValue = '';
+                } else if (accessor === 'price') {
+                    const currency = row['currency' as keyof T] || 'RWF';
+                    formattedValue = `${currency} ${Number(value).toLocaleString()}`;
+                } else if (accessor === 'furnished') {
+                    formattedValue = value ? 'Yes' : 'No';
+                } else if (accessor === 'isDeal') {
+                    formattedValue = value ? 'Deal' : 'No Deal';
+                } else if (typeof value === 'number') {
+                    formattedValue = value.toLocaleString();
+                } else {
+                    formattedValue = String(value);
+                }
+
+                return `<td>${formattedValue}</td>`;
+            }).join('');
             htmlContent += `<tr>${cells}</tr>`;
         });
 
         htmlContent += `
             </tbody>
           </table>
+          
+          <div class="footer">
+            Generated by Manron Real Estate Dashboard System
+          </div>
         </body>
       </html>
     `;

@@ -16,49 +16,122 @@ import {
   X, Upload, MapPin, DollarSign, Home, Phone, Mail, User,
   Video, Play, Trash2, Edit, Plus, Save, Eye, Settings
 } from 'lucide-react';
-import { RealEstate } from '@/types';
+import { Property } from '@/types/realEstate';
 import { toast } from '@/hooks/use-toast';
 import { api } from '@/lib/api';
 
-// Property Schema (without video fields)
-const realEstateSchema = z.object({
+// Base schema with common fields
+const baseSchema = z.object({
   code: z.string().optional(),
   title: z.string().min(1, 'Title is required'),
   description: z.string().min(1, 'Description is required'),
-  type: z.enum(['House', 'Townhouse', 'Apartment & Unit', 'Villa', 'Land', 'Rural', 'Acreage', 'Block Of Units', 'Retirement Living']),
-  saleMethod: z.enum(['Private treaty sale', 'Auction', 'Rent', 'Sold']).default('Rent'),
-  status: z.enum(['Available', 'Under contract', 'Rented', 'Sold']).default('Available'),
+  type: z.enum([
+    "House",
+    "Townhouse",
+    "Apartment & Unit",
+    "Villa",
+    "Land",
+    "Rural",
+    "Acreage",
+    "Block Of Units",
+    "Retirement Living"
+  ]),
+  saleMethod: z.enum(['Private treaty sale', 'Auction', 'Rent', 'Sold']).optional(),
+  status: z.enum(['Available', 'Under contract', 'Rented', 'Sold']).optional(),
   price: z.number().min(0, 'Price must be positive'),
   currency: z.string().default('RWF'),
   paymentType: z.enum(['per_month', 'one_time']).default('per_month'),
-  bedrooms: z.number().min(0).optional(),
-  bathrooms: z.number().min(0).optional(),
-  carSpaces: z.number().min(0).optional(),
-  rooms: z.number().min(0).optional(),
-  landSize: z.number().optional(),
-  propertySize: z.number().optional(),
-  yearBuilt: z.number().optional(),
+  location: z.string().min(1, 'Location is required'),
+  city: z.string().optional().default('Kigali'),
+  country: z.string().optional().default('Rwanda'),
+  latitude: z.string().optional().transform(val => val === '' || val === null || val === undefined ? undefined : Number(val)).refine(val => val === undefined || (!isNaN(val)), { message: "Must be a valid number" }),
+  longitude: z.string().optional().transform(val => val === '' || val === null || val === undefined ? undefined : Number(val)).refine(val => val === undefined || (!isNaN(val)), { message: "Must be a valid number" }),
+  agentName: z.string().optional(),
+  agentPhone: z.string().optional(),
+  agentEmail: z.string().optional().refine((val) => !val || z.string().email().safeParse(val).success, {
+    message: "Please enter a valid email address"
+  }),
   furnished: z.boolean().optional(),
   isDeal: z.boolean().optional(),
   dealExpires: z.date().optional(),
   petsConsidered: z.boolean().optional(),
   availableDate: z.date().optional(),
   soldDate: z.date().optional(),
-  location: z.string().min(1, 'Location is required'),
-  city: z.string().default('Kigali'),
-  country: z.string().default('Rwanda'),
-  latitude: z.number().optional(),
-  longitude: z.number().optional(),
-  agentName: z.string().min(1, 'Agent name is required'),
-  agentPhone: z.string().min(1, 'Agent phone is required'),
-  agentEmail: z.string().email('Valid email is required'),
 });
+
+// Land-specific schema
+const landSchema = baseSchema.extend({
+  type: z.literal('Land'),
+  landSize: z.string().min(1, 'Land size is required').transform(val => Number(val)).refine(val => !isNaN(val) && val > 0, { message: "Must be a positive number" }),
+  propertySize: z.string().optional().transform(val => val === '' || val === null || val === undefined ? undefined : Number(val)).refine(val => val === undefined || (!isNaN(val) && val >= 0), { message: "Must be a positive number" }),
+});
+
+// Rural-specific schema
+const ruralSchema = baseSchema.extend({
+  type: z.literal('Rural'),
+  landSize: z.string().min(1, 'Land size is required').transform(val => Number(val)).refine(val => !isNaN(val) && val > 0, { message: "Must be a positive number" }),
+  propertySize: z.string().optional().transform(val => val === '' || val === null || val === undefined ? undefined : Number(val)).refine(val => val === undefined || (!isNaN(val) && val >= 0), { message: "Must be a positive number" }),
+});
+
+// Acreage-specific schema
+const acreageSchema = baseSchema.extend({
+  type: z.literal('Acreage'),
+  landSize: z.string().min(1, 'Land size is required').transform(val => Number(val)).refine(val => !isNaN(val) && val > 0, { message: "Must be a positive number" }),
+  propertySize: z.string().optional().transform(val => val === '' || val === null || val === undefined ? undefined : Number(val)).refine(val => val === undefined || (!isNaN(val) && val >= 0), { message: "Must be a positive number" }),
+});
+
+// Residential property schemas (House, Townhouse, Apartment & Unit, Villa, Retirement Living)
+const residentialSchema = baseSchema.extend({
+  type: z.enum(['House', 'Townhouse', 'Apartment & Unit', 'Villa', 'Retirement Living']),
+  bedrooms: z.string().min(1, 'Bedrooms is required').transform(val => Number(val)).refine(val => !isNaN(val) && val > 0, { message: "Must be a positive number" }),
+  bathrooms: z.string().min(1, 'Bathrooms is required').transform(val => Number(val)).refine(val => !isNaN(val) && val > 0, { message: "Must be a positive number" }),
+  carSpaces: z.string().optional().transform(val => val === '' || val === null || val === undefined ? undefined : Number(val)).refine(val => val === undefined || (!isNaN(val) && val >= 0), { message: "Must be a positive number" }),
+  propertySize: z.string().optional().transform(val => val === '' || val === null || val === undefined ? undefined : Number(val)).refine(val => val === undefined || (!isNaN(val) && val >= 0), { message: "Must be a positive number" }),
+  yearBuilt: z.string().optional().transform(val => val === '' || val === null || val === undefined ? undefined : Number(val)).refine(val => val === undefined || (!isNaN(val) && val >= 0), { message: "Must be a positive number" }),
+});
+
+// Commercial property schema (Block Of Units)
+const commercialSchema = baseSchema.extend({
+  type: z.literal('Block Of Units'),
+  rooms: z.string().min(1, 'Total rooms is required').transform(val => Number(val)).refine(val => !isNaN(val) && val > 0, { message: "Must be a positive number" }),
+  carSpaces: z.string().optional().transform(val => val === '' || val === null || val === undefined ? undefined : Number(val)).refine(val => val === undefined || (!isNaN(val) && val >= 0), { message: "Must be a positive number" }),
+  propertySize: z.string().optional().transform(val => val === '' || val === null || val === undefined ? undefined : Number(val)).refine(val => val === undefined || (!isNaN(val) && val >= 0), { message: "Must be a positive number" }),
+  yearBuilt: z.string().optional().transform(val => val === '' || val === null || val === undefined ? undefined : Number(val)).refine(val => val === undefined || (!isNaN(val) && val >= 0), { message: "Must be a positive number" }),
+});
+
+// Main schema with custom validation
+const realEstateSchema = baseSchema.extend({
+  bedrooms: z.string().optional().transform(val => val === '' || val === null || val === undefined ? undefined : Number(val)).refine(val => val === undefined || (!isNaN(val) && val >= 0), { message: "Must be a positive number" }),
+  bathrooms: z.string().optional().transform(val => val === '' || val === null || val === undefined ? undefined : Number(val)).refine(val => val === undefined || (!isNaN(val) && val >= 0), { message: "Must be a positive number" }),
+  carSpaces: z.string().optional().transform(val => val === '' || val === null || val === undefined ? undefined : Number(val)).refine(val => val === undefined || (!isNaN(val) && val >= 0), { message: "Must be a positive number" }),
+  rooms: z.string().optional().transform(val => val === '' || val === null || val === undefined ? undefined : Number(val)).refine(val => val === undefined || (!isNaN(val) && val >= 0), { message: "Must be a positive number" }),
+  landSize: z.string().optional().transform(val => val === '' || val === null || val === undefined ? undefined : Number(val)).refine(val => val === undefined || (!isNaN(val) && val >= 0), { message: "Must be a positive number" }),
+  propertySize: z.string().optional().transform(val => val === '' || val === null || val === undefined ? undefined : Number(val)).refine(val => val === undefined || (!isNaN(val) && val >= 0), { message: "Must be a positive number" }),
+  yearBuilt: z.string().optional().transform(val => val === '' || val === null || val === undefined ? undefined : Number(val)).refine(val => val === undefined || (!isNaN(val) && val >= 0), { message: "Must be a positive number" }),
+}).refine((data) => {
+  // Custom validation based on property type
+  if (data.type === 'Land' || data.type === 'Rural' || data.type === 'Acreage') {
+    return data.landSize !== undefined && data.landSize > 0;
+  }
+  if (data.type === 'House' || data.type === 'Townhouse' || data.type === 'Apartment & Unit' || data.type === 'Villa' || data.type === 'Retirement Living') {
+    return data.bedrooms !== undefined && data.bedrooms > 0 && data.bathrooms !== undefined && data.bathrooms > 0;
+  }
+  if (data.type === 'Block Of Units') {
+    return data.rooms !== undefined && data.rooms > 0;
+  }
+  return true;
+}, {
+  message: "Please fill in the required fields for the selected property type",
+  path: ["type"]
+});
+
+
 
 // Video Schema
 const videoSchema = z.object({
   youtubeUrl: z.string().min(1, 'YouTube URL is required'),
   title: z.string().min(1, 'Video title is required'),
-  isMain: z.boolean().default(false),
+  isMain: z.boolean().optional().default(false),
 });
 
 type RealEstateFormData = z.infer<typeof realEstateSchema>;
@@ -75,7 +148,7 @@ interface PropertyVideo {
 }
 
 interface RealEstateFormProps {
-  property?: RealEstate;
+  property?: Property;
   onSubmit: (data: RealEstateFormData) => Promise<void>;
   onCancel: () => void;
 }
@@ -90,6 +163,28 @@ const extractYoutubeId = (url: string): string | null => {
   const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
   const match = url.match(regExp);
   return match && match[2].length === 11 ? match[2] : null;
+};
+
+// Function to get the appropriate schema based on property type
+const getSchemaForType = (type: string) => {
+  switch (type) {
+    case 'Land':
+      return landSchema;
+    case 'Rural':
+      return ruralSchema;
+    case 'Acreage':
+      return acreageSchema;
+    case 'House':
+    case 'Townhouse':
+    case 'Apartment & Unit':
+    case 'Villa':
+    case 'Retirement Living':
+      return residentialSchema;
+    case 'Block Of Units':
+      return commercialSchema;
+    default:
+      return baseSchema;
+  }
 };
 
 export function RealEstateForm({ property, onSubmit, onCancel }: RealEstateFormProps) {
@@ -116,7 +211,7 @@ export function RealEstateForm({ property, onSubmit, onCancel }: RealEstateFormP
     watch,
     reset,
     formState: { errors },
-  } = useForm<RealEstateFormData>({
+  } = useForm({
     resolver: zodResolver(realEstateSchema),
     defaultValues: property ? {
       code: property.code,
@@ -128,13 +223,13 @@ export function RealEstateForm({ property, onSubmit, onCancel }: RealEstateFormP
       price: property.price,
       currency: property.currency,
       paymentType: property.paymentType,
-      bedrooms: property.bedrooms,
-      bathrooms: property.bathrooms,
-      carSpaces: property.carSpaces,
-      rooms: property.rooms,
-      landSize: property.landSize,
-      propertySize: property.propertySize,
-      yearBuilt: property.yearBuilt,
+      bedrooms: property.bedrooms?.toString() || '',
+      bathrooms: property.bathrooms?.toString() || '',
+      carSpaces: property.carSpaces?.toString() || '',
+      rooms: property.rooms?.toString() || '',
+      landSize: property.landSize?.toString() || '',
+      propertySize: property.propertySize?.toString() || '',
+      yearBuilt: property.yearBuilt?.toString() || '',
       furnished: property.furnished,
       isDeal: property.isDeal,
       dealExpires: property.dealExpires ? new Date(property.dealExpires) : undefined,
@@ -144,8 +239,8 @@ export function RealEstateForm({ property, onSubmit, onCancel }: RealEstateFormP
       location: property.location,
       city: property.city,
       country: property.country,
-      latitude: property.latitude,
-      longitude: property.longitude,
+      latitude: property.latitude?.toString() || '',
+      longitude: property.longitude?.toString() || '',
       agentName: property.agent?.name,
       agentPhone: property.agent?.phone,
       agentEmail: property.agent?.email,
@@ -171,7 +266,7 @@ export function RealEstateForm({ property, onSubmit, onCancel }: RealEstateFormP
     reset: resetVideo,
     watch: watchVideo,
     formState: { errors: videoErrors },
-  } = useForm<VideoFormData>({
+  } = useForm({
     resolver: zodResolver(videoSchema),
     defaultValues: {
       youtubeUrl: '',
@@ -200,7 +295,7 @@ export function RealEstateForm({ property, onSubmit, onCancel }: RealEstateFormP
     try {
       const response = await api.get(`/realestate/properties/videos/property/${propertyId}`);
       setVideos(response.data);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to load videos:', error);
       toast({
         title: "Error",
@@ -230,7 +325,7 @@ export function RealEstateForm({ property, onSubmit, onCancel }: RealEstateFormP
     setFeatures(features.filter(f => f !== feature));
   };
 
- 
+
   const onFormSubmit = async (data: RealEstateFormData) => {
     setLoading(true);
     try {
@@ -282,10 +377,11 @@ export function RealEstateForm({ property, onSubmit, onCancel }: RealEstateFormP
       }
 
       onSubmit(data);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const axiosError = error as { response?: { data?: { message?: string } } };
       toast({
         title: "Error",
-        description: error.response?.data?.message || "Failed to save property",
+        description: axiosError.response?.data?.message || "Failed to save property",
         variant: "destructive",
       });
     } finally {
@@ -340,10 +436,11 @@ export function RealEstateForm({ property, onSubmit, onCancel }: RealEstateFormP
       resetVideo();
       setShowVideoForm(false);
       setEditingVideo(null);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const axiosError = error as { response?: { data?: { message?: string } } };
       toast({
         title: "Error",
-        description: error.response?.data?.message || "Failed to save video",
+        description: axiosError.response?.data?.message || "Failed to save video",
         variant: "destructive",
       });
     } finally {
@@ -364,10 +461,11 @@ export function RealEstateForm({ property, onSubmit, onCancel }: RealEstateFormP
       await api.delete(`/realestate/properties/videos/${videoId}`);
       toast({ title: "Success", description: "Video deleted successfully" });
       await loadPropertyVideos();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const axiosError = error as { response?: { data?: { message?: string } } };
       toast({
         title: "Error",
-        description: error.response?.data?.message || "Failed to delete video",
+        description: axiosError.response?.data?.message || "Failed to delete video",
         variant: "destructive",
       });
     }
@@ -399,6 +497,74 @@ export function RealEstateForm({ property, onSubmit, onCancel }: RealEstateFormP
 
         <TabsContent value="property" className="space-y-6">
           <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-6">
+            {/* Property Type Selection - First Priority */}
+            <Card className="border-2 border-primary/20 bg-primary/5">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-primary">
+                  <Home className="w-5 h-5" />
+                  Select Property Type
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Choose the type of property you want to list. This will determine which fields are required.
+                </p>
+              </CardHeader>
+              <CardContent>
+                <div className="max-w-md">
+                  <Label htmlFor="type" className="text-base font-semibold">Property Type *</Label>
+                  <Select
+                    value={watchedType}
+                    onValueChange={(value: string) => setValue('type', value as typeof watchedType)}
+                  >
+                    <SelectTrigger className="h-12 text-lg">
+                      <SelectValue placeholder="Select property type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="House">🏠 House</SelectItem>
+                      <SelectItem value="Townhouse">🏘️ Townhouse</SelectItem>
+                      <SelectItem value="Apartment & Unit">🏢 Apartment & Unit</SelectItem>
+                      <SelectItem value="Villa">🏡 Villa</SelectItem>
+                      <SelectItem value="Land">🏞️ Land</SelectItem>
+                      <SelectItem value="Rural">🌾 Rural</SelectItem>
+                      <SelectItem value="Acreage">🌍 Acreage</SelectItem>
+                      <SelectItem value="Block Of Units">🏬 Block Of Units</SelectItem>
+                      <SelectItem value="Retirement Living">👴 Retirement Living</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {errors.type && (
+                    <p className="text-sm text-destructive mt-2 font-medium">{errors.type.message}</p>
+                  )}
+
+                  {/* Show what fields will be required based on selection */}
+                  {watchedType && (
+                    <div className="mt-4 p-3 bg-muted/50 rounded-lg">
+                      <p className="text-sm font-medium text-muted-foreground mb-2">Required fields for {watchedType}:</p>
+                      <div className="text-sm text-muted-foreground space-y-1">
+                        {(watchedType === 'House' || watchedType === 'Townhouse' || watchedType === 'Apartment & Unit' || watchedType === 'Villa' || watchedType === 'Retirement Living') ? (
+                          <>
+                            <div>• Bedrooms and Bathrooms</div>
+                            <div>• Car Spaces (optional)</div>
+                          </>
+                        ) : (watchedType === 'Block Of Units') ? (
+                          <>
+                            <div>• Total Rooms</div>
+                            <div>• Car Spaces (optional)</div>
+                          </>
+                        ) : (watchedType === 'Land' || watchedType === 'Rural' || watchedType === 'Acreage') ? (
+                          <>
+                            <div>• Land Size (sqm)</div>
+                            <div>• No car spaces or year built needed</div>
+                          </>
+                        ) : null}
+                        <div className="text-xs text-muted-foreground/70 mt-2">
+                          Note: Agent info, GPS coordinates, city, and country are optional for all property types
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Basic Property Information */}
               <Card>
@@ -444,34 +610,12 @@ export function RealEstateForm({ property, onSubmit, onCancel }: RealEstateFormP
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="type">Property Type</Label>
-                      <Select
-                        value={watchedType}
-                        onValueChange={(value: any) => setValue('type', value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="House">House</SelectItem>
-                          <SelectItem value="Townhouse">Townhouse</SelectItem>
-                          <SelectItem value="Apartment & Unit">Apartment & Unit</SelectItem>
-                          <SelectItem value="Villa">Villa</SelectItem>
-                          <SelectItem value="Land">Land</SelectItem>
-                          <SelectItem value="Rural">Rural</SelectItem>
-                          <SelectItem value="Acreage">Acreage</SelectItem>
-                          <SelectItem value="Block Of Units">Block Of Units</SelectItem>
-                          <SelectItem value="Retirement Living">Retirement Living</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
 
                     <div>
                       <Label htmlFor="saleMethod">Sale Method</Label>
                       <Select
                         value={watchedSaleMethod}
-                        onValueChange={(value: any) => setValue('saleMethod', value)}
+                        onValueChange={(value: string) => setValue('saleMethod', value as typeof watchedSaleMethod)}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Select method" />
@@ -490,7 +634,7 @@ export function RealEstateForm({ property, onSubmit, onCancel }: RealEstateFormP
                     <Label htmlFor="status">Status</Label>
                     <Select
                       value={watchedStatus}
-                      onValueChange={(value: any) => setValue('status', value)}
+                      onValueChange={(value: string) => setValue('status', value as typeof watchedStatus)}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select status" />
@@ -551,7 +695,7 @@ export function RealEstateForm({ property, onSubmit, onCancel }: RealEstateFormP
                     <Label htmlFor="paymentType">Payment Type</Label>
                     <Select
                       defaultValue="per_month"
-                      onValueChange={(value: any) => setValue('paymentType', value)}
+                      onValueChange={(value: string) => setValue('paymentType', value as 'per_month' | 'one_time')}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select payment type" />
@@ -563,78 +707,115 @@ export function RealEstateForm({ property, onSubmit, onCancel }: RealEstateFormP
                     </Select>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="bedrooms">Bedrooms</Label>
-                      <Input
-                        id="bedrooms"
-                        type="number"
-                        {...register('bedrooms', { valueAsNumber: true })}
-                        placeholder="Number of bedrooms"
-                      />
+                  {/* Conditional fields based on property type */}
+                  {(watchedType === 'House' || watchedType === 'Townhouse' || watchedType === 'Apartment & Unit' || watchedType === 'Villa' || watchedType === 'Retirement Living') && (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="bedrooms">Bedrooms *</Label>
+                        <Input
+                          id="bedrooms"
+                          type="number"
+                          {...register('bedrooms')}
+                          placeholder="Number of bedrooms"
+                        />
+                        {errors.bedrooms && (
+                          <p className="text-sm text-destructive mt-1">{errors.bedrooms.message}</p>
+                        )}
+                      </div>
+                      <div>
+                        <Label htmlFor="bathrooms">Bathrooms *</Label>
+                        <Input
+                          id="bathrooms"
+                          type="number"
+                          {...register('bathrooms')}
+                          placeholder="Number of bathrooms"
+                        />
+                        {errors.bathrooms && (
+                          <p className="text-sm text-destructive mt-1">{errors.bathrooms.message}</p>
+                        )}
+                      </div>
                     </div>
-                    <div>
-                      <Label htmlFor="bathrooms">Bathrooms</Label>
-                      <Input
-                        id="bathrooms"
-                        type="number"
-                        {...register('bathrooms', { valueAsNumber: true })}
-                        placeholder="Number of bathrooms"
-                      />
-                    </div>
-                  </div>
+                  )}
 
-                  <div className="grid grid-cols-2 gap-4">
+                  {watchedType === 'Block Of Units' && (
                     <div>
-                      <Label htmlFor="carSpaces">Car Spaces</Label>
-                      <Input
-                        id="carSpaces"
-                        type="number"
-                        {...register('carSpaces', { valueAsNumber: true })}
-                        placeholder="Number of car spaces"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="rooms">Total Rooms</Label>
+                      <Label htmlFor="rooms">Total Rooms *</Label>
                       <Input
                         id="rooms"
                         type="number"
-                        {...register('rooms', { valueAsNumber: true })}
+                        {...register('rooms')}
                         placeholder="Total number of rooms"
                       />
+                      {errors.rooms && (
+                        <p className="text-sm text-destructive mt-1">{errors.rooms.message}</p>
+                      )}
                     </div>
-                  </div>
+                  )}
 
-                  <div className="grid grid-cols-2 gap-4">
+                  {(watchedType === 'Land' || watchedType === 'Rural' || watchedType === 'Acreage') && (
                     <div>
-                      <Label htmlFor="landSize">Land Size (sqm)</Label>
+                      <Label htmlFor="landSize">Land Size (sqm) *</Label>
                       <Input
                         id="landSize"
                         type="number"
-                        {...register('landSize', { valueAsNumber: true })}
+                        {...register('landSize')}
                         placeholder="Land size in sqm"
                       />
+                      {errors.landSize && (
+                        <p className="text-sm text-destructive mt-1">{errors.landSize.message}</p>
+                      )}
                     </div>
+                  )}
+
+                  {/* Optional fields that show for all property types except Land types */}
+                  {watchedType !== 'Land' && watchedType !== 'Rural' && watchedType !== 'Acreage' && (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="carSpaces">Car Spaces</Label>
+                        <Input
+                          id="carSpaces"
+                          type="number"
+                          {...register('carSpaces')}
+                          placeholder="Number of car spaces"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="propertySize">Property Size (sqm)</Label>
+                        <Input
+                          id="propertySize"
+                          type="number"
+                          {...register('propertySize')}
+                          placeholder="Property size in sqm"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Property size for Land types (different from car spaces) */}
+                  {(watchedType === 'Land' || watchedType === 'Rural' || watchedType === 'Acreage') && (
                     <div>
                       <Label htmlFor="propertySize">Property Size (sqm)</Label>
                       <Input
                         id="propertySize"
                         type="number"
-                        {...register('propertySize', { valueAsNumber: true })}
+                        {...register('propertySize')}
                         placeholder="Property size in sqm"
                       />
                     </div>
-                  </div>
+                  )}
 
-                  <div>
-                    <Label htmlFor="yearBuilt">Year Built</Label>
-                    <Input
-                      id="yearBuilt"
-                      type="number"
-                      {...register('yearBuilt', { valueAsNumber: true })}
-                      placeholder="Year property was built"
-                    />
-                  </div>
+                  {/* Year Built - not applicable for Land types */}
+                  {watchedType !== 'Land' && watchedType !== 'Rural' && watchedType !== 'Acreage' && (
+                    <div>
+                      <Label htmlFor="yearBuilt">Year Built</Label>
+                      <Input
+                        id="yearBuilt"
+                        type="number"
+                        {...register('yearBuilt')}
+                        placeholder="Year property was built"
+                      />
+                    </div>
+                  )}
 
                   <div className="flex items-center space-x-2">
                     <Checkbox
@@ -700,42 +881,42 @@ export function RealEstateForm({ property, onSubmit, onCancel }: RealEstateFormP
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="city">City</Label>
+                      <Label htmlFor="city">City (Optional)</Label>
                       <Input
                         id="city"
                         {...register('city')}
-                        placeholder="City"
+                        placeholder="City (optional)"
                       />
                     </div>
                     <div>
-                      <Label htmlFor="country">Country</Label>
+                      <Label htmlFor="country">Country (Optional)</Label>
                       <Input
                         id="country"
                         {...register('country')}
-                        placeholder="Country"
+                        placeholder="Country (optional)"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="latitude">Latitude</Label>
+                      <Label htmlFor="latitude">Latitude (Optional)</Label>
                       <Input
                         id="latitude"
                         type="number"
                         step="any"
-                        {...register('latitude', { valueAsNumber: true })}
-                        placeholder="GPS Latitude"
+                        {...register('latitude')}
+                        placeholder="GPS Latitude (optional)"
                       />
                     </div>
                     <div>
-                      <Label htmlFor="longitude">Longitude</Label>
+                      <Label htmlFor="longitude">Longitude (Optional)</Label>
                       <Input
                         id="longitude"
                         type="number"
                         step="any"
-                        {...register('longitude', { valueAsNumber: true })}
-                        placeholder="GPS Longitude"
+                        {...register('longitude')}
+                        placeholder="GPS Longitude (optional)"
                       />
                     </div>
                   </div>
@@ -743,12 +924,12 @@ export function RealEstateForm({ property, onSubmit, onCancel }: RealEstateFormP
                   <div>
                     <Label htmlFor="agentName" className="flex items-center gap-1">
                       <User className="w-4 h-4" />
-                      Agent Name
+                      Agent Name (Optional)
                     </Label>
                     <Input
                       id="agentName"
                       {...register('agentName')}
-                      placeholder="Agent name"
+                      placeholder="Agent name (optional)"
                     />
                     {errors.agentName && (
                       <p className="text-sm text-destructive mt-1">{errors.agentName.message}</p>
@@ -758,12 +939,12 @@ export function RealEstateForm({ property, onSubmit, onCancel }: RealEstateFormP
                   <div>
                     <Label htmlFor="agentPhone" className="flex items-center gap-1">
                       <Phone className="w-4 h-4" />
-                      Agent Phone
+                      Agent Phone (Optional)
                     </Label>
                     <Input
                       id="agentPhone"
                       {...register('agentPhone')}
-                      placeholder="Agent phone number"
+                      placeholder="Agent phone number (optional)"
                     />
                     {errors.agentPhone && (
                       <p className="text-sm text-destructive mt-1">{errors.agentPhone.message}</p>
@@ -773,13 +954,13 @@ export function RealEstateForm({ property, onSubmit, onCancel }: RealEstateFormP
                   <div>
                     <Label htmlFor="agentEmail" className="flex items-center gap-1">
                       <Mail className="w-4 h-4" />
-                      Agent Email
+                      Agent Email (Optional)
                     </Label>
                     <Input
                       id="agentEmail"
                       type="email"
                       {...register('agentEmail')}
-                      placeholder="Agent email address"
+                      placeholder="Agent email address (optional)"
                     />
                     {errors.agentEmail && (
                       <p className="text-sm text-destructive mt-1">{errors.agentEmail.message}</p>

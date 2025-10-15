@@ -6,7 +6,6 @@ import {
     BlogAnalytics,
     ContactAnalytics,
     EmailAnalytics,
-    SystemHealth,
     TrendData,
     RecentActivity,
     AnalyticsFilters,
@@ -104,15 +103,7 @@ class AnalyticsService {
         }
     }
 
-    // System Health
-    async getSystemHealth(): Promise<SystemHealth> {
-        try {
-            return await this.getWithFallback<SystemHealth>(`/system/health`);
-        } catch (error) {
-            console.error('Failed to fetch system health:', error);
-            throw error;
-        }
-    }
+
 
     // Performance Metrics
     async getPerformanceMetrics(): Promise<PerformanceMetrics> {
@@ -262,18 +253,17 @@ class AnalyticsService {
 
     // Revenue Analytics
     async getRevenueAnalytics(filters?: AnalyticsFilters): Promise<{
-        totalRevenue: number;
-        monthlyRevenue: number;
-        revenueByPropertyType: Array<{
-            type: string;
-            revenue: number;
-            percentage: number;
-        }>;
-        revenueTrends: Array<{
-            period: string;
-            revenue: number;
-            growth: number;
-        }>;
+        summary: {
+            totalRevenue: number;
+            averagePrice: number;
+            medianPrice?: number;
+            priceRange?: { min: number; max: number };
+            soldCount?: number;
+            rentedCount?: number;
+        };
+        monthlyTrends: Array<{ _id?: string | number; revenue?: number; count?: number; year?: number; month?: number }>;
+        byType: Array<{ _id?: string; revenue: number; count: number }>;
+        currency?: string;
     }> {
         try {
             return await this.getWithFallback<any>(`/revenue`, this.mapFilters(filters));

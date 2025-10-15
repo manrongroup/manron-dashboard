@@ -9,7 +9,6 @@ import {
   BlogAnalytics,
   ContactAnalytics,
   EmailAnalytics,
-  SystemHealth,
   TrendData,
   RecentActivity,
   AnalyticsFilters,
@@ -20,6 +19,15 @@ import {
 
 
 // -------------------- TYPES --------------------
+interface Notification {
+  id: string;
+  type: 'error' | 'warning' | 'info' | 'success';
+  title: string;
+  message: string;
+  priority: 'low' | 'medium' | 'high';
+  timestamp: string;
+}
+
 interface AnalyticsStats {
   overview: AnalyticsOverview;
   userStats: UserAnalytics;
@@ -28,7 +36,6 @@ interface AnalyticsStats {
   totalSubscribers: number;
   contactStats: ContactAnalytics;
   emailStats: EmailAnalytics;
-  systemHealth: SystemHealth;
   performanceMetrics: PerformanceMetrics;
   recentActivity: RecentActivity[];
   trendsData: TrendData;
@@ -99,9 +106,9 @@ interface AnalyticsContextType {
   setFilters: (filters: Partial<AnalyticsFilters>) => void;
   refreshStats: () => Promise<void>;
   getKPIs: () => KPI[];
-  getChartData: (type: 'overview' | 'users' | 'properties' | 'blogs' | 'contacts' | 'emails') => any;
+  getChartData: (type: 'overview' | 'users' | 'properties' | 'blogs' | 'contacts' | 'emails') => ChartData | null;
   getRecentActivity: () => RecentActivity[];
-  getNotifications: () => any[];
+  getNotifications: () => Notification[];
 }
 
 // -------------------- CONTEXT --------------------
@@ -114,7 +121,7 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
   const [filters, setFiltersState] = useState<AnalyticsFilters>({
     dateRange: '30d'
   });
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [agentPerformance, setAgentPerformance] = useState<AnalyticsStats['agentPerformance']>(null);
   const [revenue, setRevenue] = useState<AnalyticsStats['revenue']>(null);
   const [newsletter, setNewsletter] = useState<AnalyticsStats['newsletter']>(null);
@@ -137,7 +144,6 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
     conversionRate: 0,
     revenue: 0,
     monthlyRevenue: 0,
-    systemHealth: 95,
     responseTime: 200,
     uptime: 99.9,
     errorRate: 0.1
@@ -212,18 +218,6 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
     clickRate: 0,
     unsubscribeRate: 0,
     bounceRate: 0
-  }), []);
-
-  const generateDefaultSystemHealth = useCallback((): SystemHealth => ({
-    systemHealth: 95,
-    responseTime: 200,
-    uptime: 99.9,
-    errorRate: 0.1,
-    memoryUsage: 60,
-    cpuUsage: 40,
-    diskUsage: 50,
-    databaseConnections: 10,
-    activeSessions: 25
   }), []);
 
   const generateDefaultPerformanceMetrics = useCallback((): PerformanceMetrics => ({
@@ -305,7 +299,7 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
   const fetchAgentPerformance = useCallback(async () => {
     try {
       const data = await analyticsService.getAgentPerformance(filters);
-      return data as any;
+      return data;
     } catch (error) {
       console.warn('Failed to fetch agent performance, using defaults:', error);
       return { agents: [] };
@@ -314,8 +308,8 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
 
   const fetchRevenue = useCallback(async () => {
     try {
-      const data = await analyticsService.getRevenueAnalytics(filters as any);
-      return data as any;
+      const data = await analyticsService.getRevenueAnalytics(filters);
+      return data;
     } catch (error) {
       console.warn('Failed to fetch revenue analytics, using defaults:', error);
       return {
@@ -329,8 +323,8 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
 
   const fetchNewsletter = useCallback(async () => {
     try {
-      const data = await analyticsService.getNewsletterAnalytics(filters as any);
-      return data as any;
+      const data = await analyticsService.getNewsletterAnalytics(filters);
+      return data;
     } catch (error) {
       console.warn('Failed to fetch newsletter analytics, using defaults:', error);
       return {
@@ -343,7 +337,7 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
   const fetchRealtime = useCallback(async () => {
     try {
       const data = await analyticsService.getRealtimeMetrics();
-      return data as any;
+      return data;
     } catch (error) {
       console.warn('Failed to fetch realtime metrics, using defaults:', error);
       return { activeUsers: 0, systemLoad: 0, responseTime: 0, errorRate: 0, uptime: 0, timestamp: new Date().toISOString() };
@@ -364,15 +358,6 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
       return { properties: [], locations: [], agents: [], blogs: [] };
     }
   }, []);
-
-  const fetchSystemHealth = useCallback(async (): Promise<SystemHealth> => {
-    try {
-      return await analyticsService.getSystemHealth();
-    } catch (error) {
-      console.warn('Failed to fetch system health, using default data:', error);
-      return generateDefaultSystemHealth();
-    }
-  }, [generateDefaultSystemHealth]);
 
   const fetchPerformanceMetrics = useCallback(async (): Promise<PerformanceMetrics> => {
     try {
@@ -420,7 +405,6 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
       fetchBlogAnalytics(),
       fetchContactAnalytics(),
       fetchEmailAnalytics(),
-      fetchSystemHealth(),
       fetchPerformanceMetrics(),
       fetchTrendData(),
       fetchRecentActivity(),
@@ -440,7 +424,6 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
       blogStatsResult,
       contactStatsResult,
       emailStatsResult,
-      systemHealthResult,
       performanceMetricsResult,
       trendsDataResult,
       recentActivityResult,
@@ -458,7 +441,6 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
     const blogStats = blogStatsResult.status === 'fulfilled' ? blogStatsResult.value : generateDefaultBlogAnalytics();
     const contactStats = contactStatsResult.status === 'fulfilled' ? contactStatsResult.value : generateDefaultContactAnalytics();
     const emailStats = emailStatsResult.status === 'fulfilled' ? emailStatsResult.value : generateDefaultEmailAnalytics();
-    const systemHealth = systemHealthResult.status === 'fulfilled' ? systemHealthResult.value : generateDefaultSystemHealth();
     const performanceMetrics = performanceMetricsResult.status === 'fulfilled' ? performanceMetricsResult.value : generateDefaultPerformanceMetrics();
     const trendsData = trendsDataResult.status === 'fulfilled' ? trendsDataResult.value : generateDefaultTrendData();
     const recentActivity = recentActivityResult.status === 'fulfilled' ? recentActivityResult.value : generateDefaultRecentActivity();
@@ -474,7 +456,7 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
       if (result.status === 'rejected') {
         const endpointNames = [
           'dashboard overview', 'user analytics', 'property analytics', 'blog analytics',
-          'contact analytics', 'email analytics', 'system health', 'performance metrics',
+          'contact analytics', 'email analytics', 'performance metrics',
           'trend data', 'recent activity', 'KPIs', 'agent performance', 'revenue analytics',
           'newsletter analytics', 'realtime metrics', 'trending data'
         ];
@@ -487,9 +469,9 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
       userStats,
       propertyStats,
       blogStats,
+      totalSubscribers: newsletter.summary?.totalSubscribers || 0,
       contactStats,
       emailStats,
-      systemHealth,
       performanceMetrics,
       recentActivity,
       trendsData,
@@ -508,7 +490,6 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
     fetchBlogAnalytics,
     fetchContactAnalytics,
     fetchEmailAnalytics,
-    fetchSystemHealth,
     fetchPerformanceMetrics,
     fetchTrendData,
     fetchRecentActivity,
@@ -524,7 +505,6 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
     generateDefaultBlogAnalytics,
     generateDefaultContactAnalytics,
     generateDefaultEmailAnalytics,
-    generateDefaultSystemHealth,
     generateDefaultPerformanceMetrics,
     generateDefaultTrendData,
     generateDefaultRecentActivity,
@@ -586,22 +566,66 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
     return stats.kpis || [];
   }, [stats]);
 
-  const getChartData = useCallback((type: string) => {
+  const getChartData = useCallback((type: 'overview' | 'users' | 'properties' | 'blogs' | 'contacts' | 'emails'): ChartData | null => {
     if (!stats) return null;
 
     switch (type) {
       case 'overview':
-        return stats.trendsData.weekly;
+        return {
+          labels: stats.trendsData.weekly.map(w => w.day),
+          datasets: [{
+            label: 'Revenue',
+            data: stats.trendsData.weekly.map(w => w.revenue),
+            backgroundColor: '#8b5cf6',
+            borderColor: '#8b5cf6',
+            fill: false
+          }]
+        };
       case 'users':
-        return stats.userStats.usersByCategory;
+        return {
+          labels: stats.userStats.usersByCategory.map(u => u.name),
+          datasets: [{
+            label: 'Users',
+            data: stats.userStats.usersByCategory.map(u => u.value),
+            backgroundColor: stats.userStats.usersByCategory.map(u => u.color)
+          }]
+        };
       case 'properties':
-        return stats.propertyStats.propertiesByStatus;
+        return {
+          labels: stats.propertyStats.propertiesByStatus.map(p => p.name),
+          datasets: [{
+            label: 'Properties',
+            data: stats.propertyStats.propertiesByStatus.map(p => p.value),
+            backgroundColor: stats.propertyStats.propertiesByStatus.map(p => p.color)
+          }]
+        };
       case 'blogs':
-        return stats.blogStats.blogsByCategory;
+        return {
+          labels: stats.blogStats.blogsByCategory.map(b => b.name),
+          datasets: [{
+            label: 'Blogs',
+            data: stats.blogStats.blogsByCategory.map(b => b.value),
+            backgroundColor: stats.blogStats.blogsByCategory.map(b => b.color)
+          }]
+        };
       case 'contacts':
-        return stats.contactStats.contactsByStatus;
+        return {
+          labels: stats.contactStats.contactsByStatus.map(c => c.name),
+          datasets: [{
+            label: 'Contacts',
+            data: stats.contactStats.contactsByStatus.map(c => c.value),
+            backgroundColor: stats.contactStats.contactsByStatus.map(c => c.color)
+          }]
+        };
       case 'emails':
-        return stats.emailStats.emailsByCategory;
+        return {
+          labels: stats.emailStats.emailsByCategory.map(e => e.name),
+          datasets: [{
+            label: 'Emails',
+            data: stats.emailStats.emailsByCategory.map(e => e.value),
+            backgroundColor: stats.emailStats.emailsByCategory.map(e => e.color)
+          }]
+        };
       default:
         return null;
     }
@@ -617,18 +641,6 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
     const notifications = [];
 
     if (stats) {
-      // System health notifications
-      if (stats.overview.systemHealth < 95) {
-        notifications.push({
-          id: 'system-health',
-          type: 'warning',
-          title: 'System Health Alert',
-          message: `System health is at ${stats.overview.systemHealth}%`,
-          timestamp: new Date().toISOString(),
-          priority: 'high'
-        });
-      }
-
       // High error rate notification
       if (stats.overview.errorRate > 1) {
         notifications.push({

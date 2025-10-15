@@ -94,7 +94,7 @@ export default function Dashboard() {
 
   const handleTimeRangeChange = (value: string) => {
     setSelectedTimeRange(value);
-    setFilters({ dateRange: value as any });
+    setFilters({ dateRange: value as '24h' | '7d' | '30d' | '90d' | '1y' | 'custom' });
   };
 
   const formatNumber = (num: number) => {
@@ -204,9 +204,7 @@ export default function Dashboard() {
     );
   }
 
-  const recentActivity = analyticsStats?.recentActivity
-  const systemHealth  =  analyticsStats.systemHealth
-  console.log("systemHealth", systemHealth);
+  const recentActivity = analyticsStats?.recentActivity || []
   const overview = analyticsStats?.overview;
   const subscribers = analyticsStats.newsletter
   const userStats = analyticsStats?.userStats;
@@ -215,57 +213,9 @@ export default function Dashboard() {
   const blogStats = analyticsStats?.blogStats;
   const contactStats = analyticsStats?.contactStats;
 
- // ================  recent activities ==========================
+  // ================  recent activities ==========================
 
 
-
- const flattenedActivities =
-  recentActivity
-    ? [
-        ...(recentActivity.properties || []).map((p) => ({
-          ...p,
-          type: 'property',
-          description: `${p.type} - ${p.status}`,
-          user: p.agent?.fullname || '-',
-          timestamp: p.createdAt
-        })),
-        ...(recentActivity.blogs || []).map((b) => ({
-          ...b,
-          type: 'blog',
-          description: `${b.category} - ${b.type}`,
-          user: b.author?.fullname || '-',
-          timestamp: b.createdAt
-        })),
-        ...(recentActivity.users || []).map((u) => ({
-          ...u,
-          type: 'user',
-          description: u.role,
-          user: u.fullname,
-          timestamp: u.createdAt
-        })),
-        ...(recentActivity.inquiries || []).map((i) => ({
-          ...i,
-          type: 'inquiry',
-          description: i.subject,
-          user: i.name,
-          timestamp: i.createdAt
-        })),
-        ...(recentActivity.newsletters || []).map((n) => ({
-          ...n,
-          type: 'newsletter',
-          description: `Status: ${n.status}`,
-          user: n.email,
-          timestamp: n.createdAt
-        }))
-      ]
-    : [];
-
-    // ================== system health =============
-  const dbStatus = systemHealth?.database?.status || "unknown";
-  const dbResponseTime = systemHealth?.database?.responseTime || 0;
-  const uptimeSeconds = systemHealth?.uptime?.seconds || 0;
-  const uptimeHuman = systemHealth?.uptime?.human || "0d 0h 0m";
-  const conversionRate = analyticsStats?.conversionRate || 0;
 
 
   return (
@@ -333,9 +283,9 @@ export default function Dashboard() {
             isPositive: (userStats?.userGrowthRate || 0) > 0,
             period: 'vs last month'
           }}
-          badge={{ 
-            text: `${formatNumber(userStats?.activeUsers || 0)} active`, 
-            variant: 'secondary' 
+          badge={{
+            text: `${formatNumber(userStats?.activeUsers || 0)} active`,
+            variant: 'secondary'
           }}
           clickable
           onClick={() => canAccess('users', 'read') && handleNavigate('/users')}
@@ -352,9 +302,9 @@ export default function Dashboard() {
             isPositive: (propertyStats?.propertiesGrowthRate || 0) > 0,
             period: 'vs last month'
           }}
-          badge={{ 
-            text: formatCurrency(propertyStats?.averagePrice || 0), 
-            variant: 'outline' 
+          badge={{
+            text: formatCurrency(propertyStats?.averagePrice || 0),
+            variant: 'outline'
           }}
           clickable
           onClick={() => canAccess('properties', 'read') && handleNavigate('/real-estate')}
@@ -371,166 +321,34 @@ export default function Dashboard() {
             isPositive: (blogStats?.blogGrowthRate || 0) > 0,
             period: 'vs last month'
           }}
-          badge={{ 
-            text: `${blogStats?.draftBlogs || 0} drafts`, 
-            variant: 'secondary' 
+          badge={{
+            text: `${blogStats?.draftBlogs || 0} drafts`,
+            variant: 'secondary'
           }}
           clickable
           onClick={() => canAccess('blogs', 'read') && handleNavigate('/blogs')}
         />
 
-<StatCard
-  title="Subscribers"
-  value={formatNumber(subscribers?.summary?.totalSubscribers || 0)}
-  description={`${formatNumber(subscribers?.summary?.activeSubscribers || 0)} active subscribers`}
-  icon={MessageSquare}
-  variant="warning"
-  trend={{
-    value: subscribers?.summary?.newSubscribers || 0, // can represent new subscribers as trend
-    isPositive: (subscribers?.summary?.newSubscribers || 0) > 0,
-    period: 'vs last month'
-  }}
-  clickable
-  onClick={() => canAccess('newsletter', 'read') && handleNavigate('/newsletter')}
-/>
+        <StatCard
+          title="Subscribers"
+          value={formatNumber(subscribers?.summary?.totalSubscribers || 0)}
+          description={`${formatNumber(subscribers?.summary?.activeSubscribers || 0)} active subscribers`}
+          icon={MessageSquare}
+          variant="warning"
+          trend={{
+            value: subscribers?.summary?.newSubscribers || 0, // can represent new subscribers as trend
+            isPositive: (subscribers?.summary?.newSubscribers || 0) > 0,
+            period: 'vs last month'
+          }}
+          clickable
+          onClick={() => canAccess('newsletter', 'read') && handleNavigate('/newsletter')}
+        />
 
 
       </div>
 
-      {/* Enhanced Performance Metrics */}
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      {/* System Health Card */}
-      <Card className="hover:shadow-md transition-shadow">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">System Health</CardTitle>
-          <Shield className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-end space-x-2">
-            <div className="text-2xl font-bold">
-              {dbStatus === "healthy" ? "100%" : "⚠️"}
-            </div>
-            <div className={`text-sm flex items-center ${getTrendColor(1)}`}>
-              <CheckCircle className="h-3 w-3 mr-1" />
-              {dbStatus === "healthy" ? "Excellent" : "Issues"}
-            </div>
-          </div>
-          <div className="mt-2 space-y-1">
-            <Progress value={dbStatus === "healthy" ? 100 : 50} className="h-2" />
-            <p className="text-xs text-muted-foreground">
-              Database is {dbStatus}
-            </p>
-          </div>
-        </CardContent>
-      </Card>
 
-      {/* Response Time Card */}
-      <Card className="hover:shadow-md transition-shadow">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Response Time</CardTitle>
-          <Clock className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-end space-x-2">
-            <div className="text-2xl font-bold">{dbResponseTime}ms</div>
-            <div className={`text-sm flex items-center ${getTrendColor(-5)}`}>
-              <ArrowDownRight className="h-3 w-3 mr-1" />
-            </div>
-          </div>
-          <p className="text-xs text-muted-foreground mt-1">
-            {dbResponseTime < 200
-              ? "Excellent"
-              : dbResponseTime < 500
-              ? "Good"
-              : "Needs attention"}
-          </p>
-        </CardContent>
-      </Card>
 
-      {/* Uptime Card */}
-      <Card className="hover:shadow-md transition-shadow">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Uptime</CardTitle>
-          <CheckCircle className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-end space-x-2">
-            <div className="text-2xl font-bold">{uptimeHuman}</div>
-            <div className="text-sm text-green-600 flex items-center">
-              <div className="h-2 w-2 bg-green-500 rounded-full mr-1 animate-pulse"></div>
-              Online
-            </div>
-          </div>
-          <p className="text-xs text-muted-foreground mt-1">
-            Last {Math.floor(uptimeSeconds / 3600)} hours
-          </p>
-        </CardContent>
-      </Card>
-
-      {/* Conversion Rate Card */}
-      <Card className="hover:shadow-md transition-shadow">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Conversion Rate</CardTitle>
-          <Target className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-end space-x-2">
-            <div className="text-2xl font-bold">{formatPercentage(conversionRate)}</div>
-            <div className={`text-sm flex items-center ${getTrendColor(2)}`}>
-              <ArrowDownRight className="h-3 w-3 mr-1" />
-              {conversionRate}%
-            </div>
-          </div>
-          <p className="text-xs text-muted-foreground mt-1">Inquiry to sale conversion</p>
-        </CardContent>
-      </Card>
-    </div>
-
-      {/* Enhanced Revenue Section */}
-      {analyticsStats?.revenue && (
-        <Card className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <DollarSign className="h-5 w-5 mr-2 text-green-600" />
-              Revenue Overview
-            </CardTitle>
-            <CardDescription>Financial performance summary</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="text-center space-y-1">
-                <div className="text-3xl font-bold text-green-600">
-                  {formatCurrency(analyticsStats.revenue.summary?.totalRevenue || 0)}
-                </div>
-                <p className="text-sm text-muted-foreground">Total Revenue</p>
-                <Badge variant="secondary" className="text-xs">
-                  {analyticsStats.revenue.summary?.soldCount || 0} properties sold
-                </Badge>
-              </div>
-              <div className="text-center space-y-1">
-                <div className="text-3xl font-bold text-blue-600">
-                  {formatCurrency(analyticsStats.revenue.summary?.averagePrice || 0)}
-                </div>
-                <p className="text-sm text-muted-foreground">Average Price</p>
-                <Badge variant="outline" className="text-xs">
-                  Per property
-                </Badge>
-              </div>
-              <div className="text-center space-y-1">
-                <div className="text-3xl font-bold text-purple-600">
-                  {formatCurrency(overview?.monthlyRevenue || 0)}
-                </div>
-                <p className="text-sm text-muted-foreground">This Month</p>
-                <Badge variant="secondary" className="text-xs">
-                  {new Date().toLocaleDateString('default', { month: 'long' })}
-                </Badge>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-  
 
       {/* Enhanced Quick Actions and Recent Activity */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -613,101 +431,57 @@ export default function Dashboard() {
               View All
             </Button>
           </CardHeader>
-<CardContent>
-  <div className="space-y-4 max-h-80 overflow-y-auto">
-    {recentActivity &&
-    (
-      (recentActivity.properties?.length || 0) +
-      (recentActivity.blogs?.length || 0) +
-      (recentActivity.users?.length || 0) +
-      (recentActivity.inquiries?.length || 0) +
-      (recentActivity.newsletters?.length || 0) > 0
-    ) ? (
-      // Flatten all types into one array
-      [
-        ...(recentActivity.properties || []).map((p) => ({
-          ...p,
-          type: 'property',
-          description: `${p.type} - ${p.status}`,
-          user: p.agent?.fullname || '-',
-          timestamp: p.createdAt
-        })),
-        ...(recentActivity.blogs || []).map((b) => ({
-          ...b,
-          type: 'blog',
-          description: `${b.category} - ${b.type}`,
-          user: b.author?.fullname || '-',
-          timestamp: b.createdAt
-        })),
-        ...(recentActivity.users || []).map((u) => ({
-          ...u,
-          type: 'user',
-          description: u.role,
-          user: u.fullname,
-          timestamp: u.createdAt
-        })),
-        ...(recentActivity.inquiries || []).map((i) => ({
-          ...i,
-          type: 'inquiry',
-          description: i.subject,
-          user: i.name,
-          timestamp: i.createdAt
-        })),
-        ...(recentActivity.newsletters || []).map((n) => ({
-          ...n,
-          type: 'newsletter',
-          description: `Status: ${n.status}`,
-          user: n.email,
-          timestamp: n.createdAt
-        }))
-      ]
-        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-        .map((activity, index) => {
-          const Icon = getActivityIcon(activity.type);
-          return (
-            <div
-              key={activity._id || index}
-              className="flex items-start space-x-3 p-2 rounded-lg hover:bg-accent/50 transition-colors"
-            >
-              <div className="flex-shrink-0">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
-                  <Icon className="h-4 w-4" />
-                </div>
-              </div>
-              <div className="flex-1 min-w-0 space-y-1">
-                <p className="text-sm font-medium leading-none truncate">{activity.title}</p>
-                <p className="text-sm text-muted-foreground line-clamp-2">{activity.description}</p>
-                <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-                  <span className="truncate max-w-20">{activity.user}</span>
-                  <span>•</span>
-                 <span>
-  {new Date(activity.timestamp).toISOString().slice(0, 16).replace('T', ' ')}
-</span>
-                  {activity.priority && (
-                    <>
-                      <span>•</span>
-                      <Badge
-                        variant={getPriorityColor(activity.priority) as any}
-                        className="text-xs px-1 py-0"
+          <CardContent>
+            <div className="space-y-4 max-h-80 overflow-y-auto">
+              {recentActivity && recentActivity.length > 0 ? (
+                recentActivity
+                  .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+                  .map((activity, index) => {
+                    const Icon = getActivityIcon(activity.type);
+                    return (
+                      <div
+                        key={activity._id || index}
+                        className="flex items-start space-x-3 p-2 rounded-lg hover:bg-accent/50 transition-colors"
                       >
-                        {activity.priority}
-                      </Badge>
-                    </>
-                  )}
+                        <div className="flex-shrink-0">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+                            <Icon className="h-4 w-4" />
+                          </div>
+                        </div>
+                        <div className="flex-1 min-w-0 space-y-1">
+                          <p className="text-sm font-medium leading-none truncate">{activity.title}</p>
+                          <p className="text-sm text-muted-foreground line-clamp-2">{activity.description}</p>
+                          <div className="flex items-center space-x-2 text-xs text-muted-foreground">
+                            <span className="truncate max-w-20">{activity.user}</span>
+                            <span>•</span>
+                            <span>
+                              {new Date(activity.timestamp).toISOString().slice(0, 16).replace('T', ' ')}
+                            </span>
+                            {activity.priority && (
+                              <>
+                                <span>•</span>
+                                <Badge
+                                  variant={getPriorityColor(activity.priority) as "default" | "secondary" | "destructive" | "outline"}
+                                  className="text-xs px-1 py-0"
+                                >
+                                  {activity.priority}
+                                </Badge>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+              ) : (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Activity className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p className="text-lg font-medium">No recent activity</p>
+                  <p className="text-sm">System events will appear here</p>
                 </div>
-              </div>
+              )}
             </div>
-          );
-        })
-    ) : (
-      <div className="text-center py-12 text-muted-foreground">
-        <Activity className="h-12 w-12 mx-auto mb-4 opacity-50" />
-        <p className="text-lg font-medium">No recent activity</p>
-        <p className="text-sm">System events will appear here</p>
-      </div>
-    )}
-  </div>
-</CardContent>
+          </CardContent>
 
         </Card>
       </div>
@@ -748,8 +522,8 @@ export default function Dashboard() {
                       <p className="text-sm font-medium leading-tight">
                         {notification.title}
                       </p>
-                      <Badge 
-                        variant={getPriorityColor(notification.priority) as any}
+                      <Badge
+                        variant={getPriorityColor(notification.priority) as "default" | "secondary" | "destructive" | "outline"}
                         className="text-xs"
                       >
                         {notification.priority}
