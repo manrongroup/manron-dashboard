@@ -63,10 +63,10 @@ export function DashboardSidebar() {
   const { state } = useSidebar();
   const location = useLocation();
   const { user, logout, hasPermission } = useAuth();
-  
+
   const currentPath = location.pathname;
   const collapsed = state === 'collapsed';
-  
+
   const isActive = (path: string) => {
     if (path === '/') {
       return currentPath === '/';
@@ -94,13 +94,18 @@ export function DashboardSidebar() {
     )}>
       <SidebarHeader className="p-4">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center">
-            <Home className="w-4 h-4 text-white" />
-          </div>
+          <img
+            src="/logo.png"
+            alt="Manron Group"
+            className={cn(
+              "object-contain transition-all duration-300",
+              collapsed ? "w-10 h-10" : "w-10 h-10"
+            )}
+          />
           {!collapsed && (
             <div>
-              <h2 className="text-lg font-semibold">WebManager</h2>
-              <p className="text-xs text-muted-foreground">Multi-Site Dashboard</p>
+              <h2 className="text-lg font-semibold">Manron Group</h2>
+              <p className="text-xs text-muted-foreground">Dashboard</p>
             </div>
           )}
         </div>

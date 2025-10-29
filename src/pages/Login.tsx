@@ -70,14 +70,14 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/50 to-background p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="w-16 h-16  flex items-center justify-center mx-auto mb-4 animate-pulse-glow">
-             <img className='rounded-full' src="./logo.png" alt="" />
+          <div className="w-16 h-16 flex items-center justify-center mx-auto mb-4">
+            <img className='w-16 h-16 object-contain' src="/logo.png" alt="Manron Group Logo" />
           </div>
           <h1 className="text-3xl font-bold text-primary">
             Manron Group Dashboard
           </h1>
           <p className="text-muted-foreground mt-2">
-            Multi-Website Management Dashboard
+            Management System for other 4 websites
           </p>
         </div>
 
@@ -113,13 +113,13 @@ export default function Login() {
                 <FormField
                   control={form.control}
                   name="password"
-                  
+
                   render={({ field }) => (
                     <FormItem >
                       <FormLabel>Password</FormLabel>
                       <FormControl>
                         <Input
-                        className='py-7 rounded text-md '
+                          className='py-7 rounded text-md '
                           type="password"
                           placeholder="Enter your password"
                           {...field}
@@ -149,7 +149,7 @@ export default function Login() {
           </CardContent>
         </Card>
 
-        
+
       </div>
     </div>
   );

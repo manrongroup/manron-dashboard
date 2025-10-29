@@ -1,6 +1,6 @@
 import axios, { AxiosRequestConfig, AxiosError } from 'axios';
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'https://manron-group-backend.onrender.com/api/v1';
+const BASE_URL = import.meta.env.VITE_API_URL || 'https://api.manrongroup.com/api/v1';
 
 // Create axios instances with base configuration
 const api = axios.create({
