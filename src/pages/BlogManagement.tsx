@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, FileText, CheckCircle, FileClock, FolderOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,7 +14,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { api } from '@/lib/api';
-import { Blog } from '@/types/blog';
+import { Blog } from '@/types';
 import BlogForm from '@/components/BlogForm';
 import { toast } from 'sonner';
 import BlogsTable from '@/components/tables/BlogTable';
@@ -23,6 +24,7 @@ export default function BlogManagement() {
   const [blogs, setBlogs] = useState<Blog[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedBlog, setSelectedBlog] = useState<Blog | null>(null);
+  const [viewBlog, setViewBlog] = useState<Blog | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [deleteBlog, setDeleteBlog] = useState<Blog | null>(null);
@@ -110,9 +112,20 @@ export default function BlogManagement() {
       <div className='h-full w-full'>
         <BlogsTable
           blogs={filteredBlogs}
-          onEdit={(blog) => { setSelectedBlog(blog._id); setIsEditDialogOpen(true); }}
-          onDelete={(blog) => setDeleteBlog(blog._id)}
+          onEdit={(blog) => {
+            const fullBlog = blogs.find(b => b._id === blog._id) || blog;
+            setSelectedBlog(fullBlog as Blog);
+            setIsEditDialogOpen(true);
+          }}
+          onDelete={(id) => {
+            const blog = blogs.find(b => b._id === id);
+            if (blog) setDeleteBlog(blog);
+          }}
           onCreate={() => setIsCreateDialogOpen(true)}
+          onView={(blog) => {
+            const fullBlog = blogs.find(b => b._id === blog._id) || blog;
+            setViewBlog(fullBlog as Blog);
+          }}
         />
       </div>
 
@@ -124,6 +137,93 @@ export default function BlogManagement() {
               blog={selectedBlog}
               onSuccess={() => { setIsEditDialogOpen(false); setSelectedBlog(null); fetchBlogs(); }}
             />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* View Blog Details Dialog */}
+      <Dialog open={!!viewBlog} onOpenChange={() => setViewBlog(null)}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Blog Details</DialogTitle>
+          </DialogHeader>
+          {viewBlog && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Title</label>
+                  <p className="text-base font-semibold">{viewBlog.title}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Author</label>
+                  <p className="text-base">{viewBlog.author}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Category</label>
+                  <p className="text-base">
+                    <Badge variant="outline">{viewBlog.category}</Badge>
+                  </p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Read Time</label>
+                  <p className="text-base">{viewBlog.readTime}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Publish Date</label>
+                  <p className="text-base">
+                    {viewBlog.publishDate ? new Date(viewBlog.publishDate).toLocaleDateString() : '—'}
+                  </p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Featured</label>
+                  <p className="text-base">
+                    <Badge variant={viewBlog.featured ? "default" : "outline"}>
+                      {viewBlog.featured ? "Yes" : "No"}
+                    </Badge>
+                  </p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Created At</label>
+                  <p className="text-base">
+                    {new Date(viewBlog.createdAt).toLocaleString()}
+                  </p>
+                </div>
+                {viewBlog.updatedAt && (
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Updated At</label>
+                    <p className="text-base">
+                      {new Date(viewBlog.updatedAt).toLocaleString()}
+                    </p>
+                  </div>
+                )}
+              </div>
+              {viewBlog.tags && viewBlog.tags.length > 0 && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Tags</label>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {viewBlog.tags.map((tag, idx) => (
+                      <Badge key={idx} variant="secondary">{tag}</Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Excerpt</label>
+                <p className="text-base mt-2 p-3 bg-muted rounded-lg">{viewBlog.excerpt}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Content</label>
+                <div className="mt-2 p-4 bg-muted rounded-lg prose max-w-none">
+                  <div dangerouslySetInnerHTML={{ __html: viewBlog.content }} />
+                </div>
+              </div>
+              {viewBlog.image && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Featured Image</label>
+                  <img src={viewBlog.image} alt={viewBlog.title} className="mt-2 rounded-lg max-w-full h-auto" />
+                </div>
+              )}
+            </div>
           )}
         </DialogContent>
       </Dialog>

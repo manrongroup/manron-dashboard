@@ -185,13 +185,13 @@ export function DashboardSidebar() {
               <Avatar className="w-8 h-8">
                 <AvatarImage src={user?.avatar} />
                 <AvatarFallback className="bg-primary text-primary-foreground">
-                  {user?.name?.[0] || user?.email[0].toUpperCase()}
+                  {user?.fullname?.[0]?.toUpperCase() || user?.email[0]?.toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               {!collapsed && (
-                <div className="flex flex-col items-start ml-3">
+                <div className="flex flex-col items-start ml-3 overflow-hidden">
                   <span className="text-sm font-medium">
-                    {user?.name || user?.email}
+                    {user?.fullname || user?.email}
                   </span>
                   <span className="text-xs text-muted-foreground capitalize">
                     {user?.role}

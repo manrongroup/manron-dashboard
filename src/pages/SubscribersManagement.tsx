@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { useAuth } from '@/contexts/AuthContext';
+import { Badge } from '@/components/ui/badge';
 import { Subscriber } from '@/types';
 import { api } from '@/lib/api';
 import StatCard from '@/components/ui/stat-card';
@@ -13,7 +13,6 @@ import { toast } from 'sonner';
 import RichTextEditor from '@/components/RichTextEditor';
 
 export default function SubscribersManagement() {
-  const { hasPermission } = useAuth();
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -24,6 +23,7 @@ export default function SubscribersManagement() {
   const [emailSubject, setEmailSubject] = useState('');
   const [emailLoading, setEmailLoading] = useState(false);
   const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
+  const [viewSubscriber, setViewSubscriber] = useState<Subscriber | null>(null);
 
   useEffect(() => {
     fetchSubscribers();
@@ -33,8 +33,15 @@ export default function SubscribersManagement() {
     try {
       const response = await api.get('/newsletter');
       setSubscribers(response.data || []);
-    } catch (error) {
-      toast.error('Failed to fetch subscribers');
+    } catch (error: any) {
+      // Don't let 401 errors from this endpoint trigger logout
+      // Just show error and set empty array
+      if (error.response?.status === 401) {
+        setSubscribers([]);
+        toast.error('Access denied. Please check your permissions.');
+      } else {
+        toast.error('Failed to fetch subscribers');
+      }
     } finally {
       setLoading(false);
     }
@@ -91,7 +98,7 @@ export default function SubscribersManagement() {
     }
   };
 
-  const handleSelectSubscriber = (subscriber:any) => {
+  const handleSelectSubscriber = (subscriber: any) => {
     setSelectedSubscribers(prev =>
       prev.includes(subscriber._id) ? prev.filter(subId => subId !== subscriber._id) : [...prev, subscriber._id]
     );
@@ -132,52 +139,50 @@ export default function SubscribersManagement() {
           <p className="text-muted-foreground">Manage newsletter subscribers from all websites</p>
         </div>
         <div className="flex gap-2">
-          {hasPermission('manage_content') && (
-            <Dialog open={isEmailDialogOpen} onOpenChange={setIsEmailDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Send className="w-4 h-4 mr-2" />
-                  Send Email
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-3xl">
-                <DialogHeader>
-                  <DialogTitle>
-                    Send Email to {selectedSubscribers.length > 0
-                      ? `${selectedSubscribers.length} Selected Subscribers`
-                      : 'All Subscribers'}
-                  </DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Subject</label>
-                    <Input
-                      placeholder="Enter email subject"
-                      value={emailSubject}
-                      onChange={(e) => setEmailSubject(e.target.value)}
-                    />
-                  </div>
-                  <div className=' p-5'>
-                    <label className="text-sm font-medium mb-2 block">Message</label>
-                    <RichTextEditor
-                      value={emailMessage}
-                      onChange={setEmailMessage}
-                      placeholder="Write your email..."
-                      height="250px"
-                    />
-                  </div>
-                  <div className="flex justify-end gap-2">
-                    <Button variant="outline" onClick={() => setIsEmailDialogOpen(false)}>
-                      Cancel
-                    </Button>
-                    <Button onClick={handleSendEmail} disabled={emailLoading}>
-                      {emailLoading ? 'Sending...' : 'Send Email'}
-                    </Button>
-                  </div>
+          <Dialog open={isEmailDialogOpen} onOpenChange={setIsEmailDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Send className="w-4 h-4 mr-2" />
+                Send Email
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-3xl">
+              <DialogHeader>
+                <DialogTitle>
+                  Send Email to {selectedSubscribers.length > 0
+                    ? `${selectedSubscribers.length} Selected Subscribers`
+                    : 'All Subscribers'}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Subject</label>
+                  <Input
+                    placeholder="Enter email subject"
+                    value={emailSubject}
+                    onChange={(e) => setEmailSubject(e.target.value)}
+                  />
                 </div>
-              </DialogContent>
-            </Dialog>
-          )}
+                <div className=' p-5'>
+                  <label className="text-sm font-medium mb-2 block">Message</label>
+                  <RichTextEditor
+                    value={emailMessage}
+                    onChange={setEmailMessage}
+                    placeholder="Write your email..."
+                    height="250px"
+                  />
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => setIsEmailDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleSendEmail} disabled={emailLoading}>
+                    {emailLoading ? 'Sending...' : 'Send Email'}
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
@@ -192,7 +197,76 @@ export default function SubscribersManagement() {
         subscribers={filteredSubscribers}
         onDelete={handleDelete}
         onEdit={handleSelectSubscriber}
+        onView={(subscriber) => {
+          const fullSubscriber = subscribers.find(s => s._id === subscriber._id) || subscriber;
+          setViewSubscriber(fullSubscriber as Subscriber);
+        }}
       />
+
+      {/* View Subscriber Details Dialog */}
+      <Dialog open={!!viewSubscriber} onOpenChange={() => setViewSubscriber(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Subscriber Details</DialogTitle>
+          </DialogHeader>
+          {viewSubscriber && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Email</label>
+                  <p className="text-base">
+                    <a href={`mailto:${viewSubscriber.email}`} className="text-blue-600 hover:underline">
+                      {viewSubscriber.email}
+                    </a>
+                  </p>
+                </div>
+                {viewSubscriber.name && (
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Name</label>
+                    <p className="text-base font-semibold">{viewSubscriber.name}</p>
+                  </div>
+                )}
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Website</label>
+                  <p className="text-base">{viewSubscriber.website || '—'}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Status</label>
+                  <p className="text-base">
+                    <Badge variant={viewSubscriber.status === 'active' ? 'default' : 'secondary'}>
+                      {viewSubscriber.status}
+                    </Badge>
+                  </p>
+                </div>
+                {viewSubscriber.categories && viewSubscriber.categories.length > 0 && (
+                  <div className="md:col-span-2">
+                    <label className="text-sm font-medium text-muted-foreground">Categories</label>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {viewSubscriber.categories.map((cat, idx) => (
+                        <Badge key={idx} variant="outline">{cat}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Created At</label>
+                  <p className="text-base">
+                    {new Date(viewSubscriber.createdAt).toLocaleString()}
+                  </p>
+                </div>
+                {(viewSubscriber as any).updatedAt && (
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Updated At</label>
+                    <p className="text-base">
+                      {new Date((viewSubscriber as any).updatedAt).toLocaleString()}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

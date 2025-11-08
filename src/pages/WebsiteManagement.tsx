@@ -37,33 +37,7 @@ export default function WebsiteManagement() {
         description: 'Failed to fetch websites',
         variant: 'destructive',
       });
-      // Mock data for demonstration
-      setWebsites([
-        {
-          _id: '1',
-          name: 'Prime Properties',
-          domain: 'primeproperties.com',
-          type: 'real-estate',
-          status: 'active',
-          description: 'Luxury real estate listings and management'
-        },
-        {
-          _id: '2',
-          name: 'Tech Blog Central',
-          domain: 'techcentral.blog',
-          type: 'blog',
-          status: 'active',
-          description: 'Technology news and tutorials'
-        },
-        {
-          _id: '3',
-          name: 'Corporate Solutions',
-          domain: 'corpsolutions.com',
-          type: 'corporate',
-          status: 'inactive',
-          description: 'Business solutions and services'
-        }
-      ]);
+      setWebsites([]);
     } finally {
       setLoading(false);
     }

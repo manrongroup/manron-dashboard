@@ -41,23 +41,7 @@ import {
   Target,
   Percent
 } from 'lucide-react';
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart as RechartsPieChart,
-  Cell,
-  BarChart,
-  Bar,
-  LineChart as RechartsLineChart,
-  Line,
-  Pie,
-  Legend
-} from 'recharts';
+
 
 const COLORS = ['#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#6366f1'];
 
@@ -208,7 +192,6 @@ export default function Dashboard() {
   const overview = analyticsStats?.overview;
   const subscribers = analyticsStats.newsletter
   const userStats = analyticsStats?.userStats;
-  console.log(userStats);
   const propertyStats = analyticsStats?.propertyStats;
   const blogStats = analyticsStats?.blogStats;
   const contactStats = analyticsStats?.contactStats;
@@ -426,7 +409,7 @@ export default function Dashboard() {
               </CardTitle>
               <CardDescription>Latest system events and updates</CardDescription>
             </div>
-            <Button variant="ghost" size="sm" onClick={() => console.log("view all clicked")}>
+            <Button variant="ghost" size="sm">
               <Eye className="h-4 w-4 mr-1" />
               View All
             </Button>

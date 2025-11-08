@@ -32,18 +32,17 @@ interface AuthProviderProps {
 }
 
 // Role hierarchy and permissions
+// Based on backend: superAdmin, admin, client only
 const ROLE_HIERARCHY = {
-  superAdmin: 4,
-  admin: 3,
-  agent: 2,
-  worker: 1,
-  user: 0
+  superAdmin: 3,
+  admin: 2,
+  client: 1
 };
 
 const PERMISSIONS: Record<string, string[]> = {
   superAdmin: [
     'all',
-    'manage_users',
+    'manage_users', // Only superAdmin can CRUD users
     'manage_agents',
     'manage_content',
     'manage_properties',
@@ -57,42 +56,25 @@ const PERMISSIONS: Record<string, string[]> = {
     'security_management'
   ],
   admin: [
+    'manage_agents', // Admin can manage agents
     'manage_content',
     'manage_properties',
     'manage_blogs',
     'manage_contacts',
     'manage_emails',
+    'view_emails',
+    'view_subscribers',
     'view_analytics',
     'export_data',
-    'system_settings',
-    'audit_logs',
-    'security_management'
+    'view_users' // Admin can only view users, not CRUD
   ],
   client: [
-    'manage_users',
-    'manage_agents',
-    'manage_content',
-    'manage_properties',
-    'manage_blogs',
-    'manage_contacts',
-    'manage_emails',
-    'view_analytics',
-    'export_data'
-  ],
-  agent: [
-    'manage_properties',
-    'manage_contacts',
-    'view_analytics',
-    'manage_own_content'
-  ],
-  worker: [
-    'manage_content',
-    'manage_contacts',
-    'view_basic_analytics'
-  ],
-  user: [
     'view_content',
-    'view_own_data'
+    'view_properties',
+    'view_blogs',
+    'view_agents',
+    'view_emails',
+    'view_subscribers'
   ]
 };
 
@@ -145,12 +127,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       userEmail: user?.email
     };
 
-    // Log to console in development, send to API in production
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Security Event:', securityEvent);
-    } else {
-      // In production, send to security logging endpoint
-      api.post('/security/log', securityEvent).catch(console.error);
+    // In production, send to security logging endpoint
+    // In development, events are silently logged
+    if (process.env.NODE_ENV === 'production') {
+      api.post('/security/log', securityEvent).catch(() => {
+        // Silently fail - don't break the app if logging fails
+      });
     }
   };
 
@@ -160,7 +142,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await api.post('/login', { email, password });
 
       const { token, user: userData } = response.data.data;
-      console.log(token, userData);
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(userData));
       setUser(userData);
@@ -241,7 +222,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (!user) return false;
 
     // Super admin can access everything
-    if (user.role === 'superAdmin' || user.role === 'admin') return true;
+    if (user.role === 'superAdmin') return true;
+
+    // Admin can access everything except user CRUD
+    if (user.role === 'admin') {
+      // Admin can only view users, not create/update/delete
+      if (resource === 'users' && action !== 'read') return false;
+      return ['users', 'agents', 'properties', 'blogs', 'contacts', 'emails', 'subscribers', 'analytics'].includes(resource);
+    }
+
+    // Client can view public content, emails, and subscribers
+    if (user.role === 'client') {
+      return ['properties', 'blogs', 'agents', 'emails', 'subscribers'].includes(resource) && action === 'read';
+    }
 
     // Check if user has permission for the resource
     const resourcePermission = `manage_${resource}`;
@@ -255,21 +248,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const allowedActions = RESOURCE_ACTIONS[resource] || [];
     if (!allowedActions.includes(action)) return false;
 
-    // Check role-based access
-    switch (user.role) {
-      case 'admin':
-        return ['users', 'agents', 'properties', 'blogs', 'contacts', 'emails', 'analytics'].includes(resource);
-      case 'agent':
-        return ['properties', 'contacts', 'analytics'].includes(resource) &&
-          ['read', 'create', 'update'].includes(action);
-      case 'worker':
-        return ['blogs', 'contacts'].includes(resource) &&
-          ['read', 'create', 'update'].includes(action);
-      case 'user':
-        return ['properties', 'blogs'].includes(resource) && action === 'read';
-      default:
-        return false;
-    }
+    return false;
   };
 
   const getAvailablePermissions = (): string[] => {

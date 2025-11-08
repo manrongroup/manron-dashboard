@@ -4,35 +4,30 @@ import React, { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Edit, Trash2 } from "lucide-react";
 import { DataTable } from "../ui/data-table";
-
-interface Contact {
-  _id: string;
-  name: string;
-  email: string;
-  telephone: string;
-  service: string;
-  description: string;
-  website?: string; // ✅ added website
-  createdAt: string;
-  updatedAt: string;
-}
+import { Contact } from "@/types";
 
 interface ContactsTableProps {
   contacts: Contact[];
   onDelete: (id: string) => void;
   onEdit: (contact: Contact) => void;
+  onView?: (contact: Contact) => void;
 }
 
 const ContactsTable: React.FC<ContactsTableProps> = ({
   contacts,
   onDelete,
   onEdit,
+  onView,
 }) => {
   const [selectedContacts, setSelectedContacts] = useState<Contact[]>([]);
 
-  const handleRowClick = useCallback((row: Contact) => {
-    console.log("Contact clicked:", row);
-  }, []);
+  const handleRowClick = useCallback((row: any) => {
+    if (onView) {
+      // Extract the actual contact data from the row object
+      const contact = row.original || row;
+      onView(contact);
+    }
+  }, [onView]);
 
   const handleRowSelect = useCallback((rows: Contact[]) => {
     setSelectedContacts(rows);
@@ -76,9 +71,9 @@ const ContactsTable: React.FC<ContactsTableProps> = ({
       cell: ({ row }: any) => <div>{row.getValue("email")}</div>,
     },
     {
-      accessorKey: "telephone",
+      accessorKey: "phone",
       header: "Phone",
-      cell: ({ row }: any) => <div>{row.getValue("telephone")}</div>,
+      cell: ({ row }: any) => <div>{row.getValue("phone") || "—"}</div>,
     },
     {
       accessorKey: "website",
@@ -100,19 +95,19 @@ const ContactsTable: React.FC<ContactsTableProps> = ({
       },
     },
     {
-      accessorKey: "service",
-      header: "Service",
+      accessorKey: "category",
+      header: "Category",
       cell: ({ row }: any) => (
         <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-          {row.getValue("service")}
+          {row.getValue("category")}
         </span>
       ),
     },
     {
-      accessorKey: "description",
+      accessorKey: "message",
       header: "Message",
       cell: ({ row }: any) => (
-        <div className="line-clamp-2">{row.getValue("description")}</div>
+        <div className="line-clamp-2">{row.getValue("message")}</div>
       ),
     },
     {
@@ -191,7 +186,7 @@ const ContactsTable: React.FC<ContactsTableProps> = ({
                 key={contact._id}
                 className="text-sm md:text-base text-blue-700"
               >
-                {contact.name} — {contact.email} ({contact.service})
+                {contact.name} — {contact.email} ({contact.category})
               </div>
             ))}
           </div>

@@ -2,13 +2,36 @@ export interface User {
   _id: string;
   id: string;
   email: string;
-  role: 'superAdmin' | 'admin' | 'worker' | 'user' | 'agent';
+  role: 'superAdmin' | 'admin' | 'client';
   fullname?: string;
   avatar?: string;
   telephone?: string;
   isActive: boolean;
   lastLogin?: string;
   permissions?: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Agent is separate from User - agents cannot log in
+export interface Agent {
+  _id: string;
+  id: string;
+  email: string;
+  fullname: string;
+  telephone?: string;
+  photo?: string;
+  title?: string;
+  experience?: number;
+  description?: string;
+  specializations?: string[];
+  languages?: string[];
+  serviceAreas?: string[];
+  status?: 'Active' | 'Inactive' | 'On Leave';
+  rating?: number;
+  totalReviews?: number;
+  company?: string;
+  role?: 'agent'; // This is just metadata, NOT a system role
   createdAt: string;
   updatedAt: string;
 }

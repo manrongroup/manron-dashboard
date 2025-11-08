@@ -25,7 +25,7 @@ import { useEmail } from "@/contexts/EmailContext";
 import { useToast } from "@/hooks/use-toast";
 import { useUsers } from "@/contexts/UserContext";
 import UsersTable from "@/components/tables/UsersTable";
-import { UserForm } from "@/components/UserForm";
+import { AgentForm } from "@/components/AgentForm";
 import RichTextEditor from "@/components/RichTextEditor";
 import StatCard from "@/components/ui/stat-card";
 
@@ -53,12 +53,18 @@ export default function AgentManagement() {
         }
         setSending(true);
         try {
+            let result;
             if (selectedRecipientId) {
-                await sendToIndividual(selectedRecipientId, { subject, message: body });
+                result = await sendToIndividual(selectedRecipientId, { subject, message: body });
             } else {
-                await sendToCategory("agents", { subject, message: body });
+                result = await sendToCategory("agents", { subject, message: body });
             }
-            toast({ title: "Success", description: "Email sent to agents" });
+            // Email is sent asynchronously - backend returns immediately
+            toast({
+                title: "Success",
+                description: result?.message || "Emails are being sent to agents. This may take a few moments.",
+                duration: 5000
+            });
             setIsEmailDialogOpen(false);
             setSubject("");
             setBody("");
@@ -136,7 +142,8 @@ export default function AgentManagement() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                    {currentUser?.role === "superAdmin" && (
+                    {/* Admin and superAdmin can manage agents */}
+                    {(currentUser?.role === "admin" || currentUser?.role === "superAdmin") && (
                         <>
                             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
                                 <DialogTrigger asChild>
@@ -144,12 +151,11 @@ export default function AgentManagement() {
                                         <Plus className="mr-2 h-4 w-4" /> Add Agent
                                     </Button>
                                 </DialogTrigger>
-                                <DialogContent className="max-w-2xl">
+                                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                                     <DialogHeader>
                                         <DialogTitle>Create Agent</DialogTitle>
                                     </DialogHeader>
-                                    <UserForm
-                                        isAgentForm
+                                    <AgentForm
                                         onSuccess={async () => {
                                             setIsCreateDialogOpen(false);
                                             await fetchAgents();
@@ -173,53 +179,71 @@ export default function AgentManagement() {
             <UsersTable
                 users={agents.map((a) => ({ ...a, id: a.id || a._id, role: "agent" }))}
                 onEdit={(a) => {
-                    setSelectedAgent(a);
-                    setIsEditDialogOpen(true);
+                    // Admin and superAdmin can edit agents
+                    if (currentUser?.role === "admin" || currentUser?.role === "superAdmin") {
+                        setSelectedAgent(a);
+                        setIsEditDialogOpen(true);
+                    }
                 }}
-                onDelete={(a) => setDeleteTarget({ id: a.id || a._id, type: "agent", email: a.email, fullname: a.fullname })}
+                onDelete={(a) => {
+                    // Admin and superAdmin can delete agents
+                    if (currentUser?.role === "admin" || currentUser?.role === "superAdmin") {
+                        setDeleteTarget({ id: a.id || a._id, type: "agent", email: a.email, fullname: a.fullname });
+                    }
+                }}
                 onEmail={(a) => {
-                    setSelectedRecipientId(a.id || a._id);
-                    setIsEmailDialogOpen(true);
+                    // Admin and superAdmin can email agents
+                    if (currentUser?.role === "admin" || currentUser?.role === "superAdmin") {
+                        setSelectedRecipientId(a.id || a._id);
+                        setIsEmailDialogOpen(true);
+                    }
                 }}
-                onCreate={() => setIsCreateDialogOpen(true)}
+                onCreate={() => {
+                    if (currentUser?.role === "admin" || currentUser?.role === "superAdmin") {
+                        setIsCreateDialogOpen(true);
+                    }
+                }}
             />
 
-            {/* Edit agent dialog */}
-            <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-                <DialogContent className="max-w-2xl">
-                    <DialogHeader>
-                        <DialogTitle>Edit Agent</DialogTitle>
-                    </DialogHeader>
-                    {selectedAgent && (
-                        <UserForm
-                            isAgentForm
-                            user={selectedAgent}
-                            onSuccess={async () => {
-                                setIsEditDialogOpen(false);
-                                await fetchAgents();
-                            }}
-                        />
-                    )}
-                </DialogContent>
-            </Dialog>
+            {/* Edit agent dialog - Admin and superAdmin */}
+            {(currentUser?.role === "admin" || currentUser?.role === "superAdmin") && (
+                <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+                    <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                        <DialogHeader>
+                            <DialogTitle>Edit Agent</DialogTitle>
+                        </DialogHeader>
+                        {selectedAgent && (
+                            <AgentForm
+                                agent={selectedAgent}
+                                onSuccess={async () => {
+                                    setIsEditDialogOpen(false);
+                                    await fetchAgents();
+                                }}
+                            />
+                        )}
+                    </DialogContent>
+                </Dialog>
+            )}
 
-            {/* Delete confirm */}
-            <AlertDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Agent</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Are you sure you want to delete "{deleteTarget?.fullname || deleteTarget?.email}"? This action cannot be undone.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction className="bg-destructive" onClick={confirmDelete}>
-                            Delete
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            {/* Delete confirm - Admin and superAdmin */}
+            {(currentUser?.role === "admin" || currentUser?.role === "superAdmin") && (
+                <AlertDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Agent</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Are you sure you want to delete "{deleteTarget?.fullname || deleteTarget?.email}"? This action cannot be undone.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction className="bg-destructive" onClick={confirmDelete}>
+                                Delete
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            )}
 
             {/* Email dialog */}
             <Dialog open={isEmailDialogOpen} onOpenChange={setIsEmailDialogOpen}>

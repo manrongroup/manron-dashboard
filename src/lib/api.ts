@@ -1,4 +1,4 @@
-import axios, { AxiosRequestConfig, AxiosError } from 'axios';
+import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'https://api.manrongroup.com/api/v1';
 
@@ -17,17 +17,33 @@ const realEstateApi = axios.create({
   },
 });
 
-// Request interceptor to add auth token
-const addAuthToken = (config: AxiosRequestConfig) => {
+// Request interceptor to add auth token and handle FormData
+const addAuthToken = (config: InternalAxiosRequestConfig) => {
   const token = localStorage.getItem('token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+  }
+  // Remove Content-Type header for FormData - browser will set it with boundary
+  if (config.data instanceof FormData) {
+    delete config.headers['Content-Type'];
   }
   return config;
 };
 
 const errorHandler = (error: AxiosError) => {
   if (error.response?.status === 401) {
+    // Don't logout for permission-denied errors on emails/subscribers endpoints
+    // These endpoints may return 401 for permission issues, not auth issues
+    const requestUrl = error.config?.url || '';
+    const skipLogoutEndpoints = ['/emails/sent', '/emails/stats', '/newsletter', '/emails'];
+    const shouldSkipLogout = skipLogoutEndpoints.some(endpoint => requestUrl.includes(endpoint));
+
+    if (shouldSkipLogout) {
+      // Just reject the error without logging out
+      return Promise.reject(error);
+    }
+
+    // For other endpoints, logout on 401 (actual authentication failure)
     const hadToken = !!localStorage.getItem('token');
     localStorage.removeItem('token');
     localStorage.removeItem('user');

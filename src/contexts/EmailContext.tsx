@@ -6,14 +6,16 @@ import { api } from "@/lib/api";
 // -------------------- TYPES --------------------
 interface SentEmail {
   _id: string;
+  id?: string;
   subject: string;
   message: string;
   recipients: string[];
-  status: "sent" | "failed";
-  category: string;
-  sentBy: string;
+  status: "processing" | "sent" | "failed";
+  category?: string;
+  sentBy?: string;
   createdAt: string;
   updatedAt: string;
+  emailRecordId?: string;
 }
 
 interface EmailStats {
@@ -29,15 +31,16 @@ interface EmailContextType {
   loading: boolean;
   error: string | null;
 
-  // send
-  sendToAll: (data: { subject?: string; message: string }) => Promise<void>;
-  sendToCategory: (category: string, data: { subject?: string; message: string }) => Promise<void>;
-  sendToIndividual: (id: string, data: { subject?: string; message: string }) => Promise<void>;
+  // send (returns emailRecordId for async tracking)
+  sendToAll: (data: { subject?: string; message: string }) => Promise<{ emailRecordId: string; message: string }>;
+  sendToCategory: (category: string, data: { subject?: string; message: string }) => Promise<{ emailRecordId: string; message: string }>;
+  sendToIndividual: (id: string, data: { subject?: string; message: string }) => Promise<{ emailRecordId: string; message: string }>;
 
   // get
   fetchAllSent: () => Promise<void>;
   fetchByCategory: (category: string) => Promise<void>;
   fetchById: (id: string) => Promise<SentEmail | null>;
+  checkEmailStatus: (emailRecordId: string) => Promise<SentEmail | null>;
 
   // stats
   fetchStats: () => Promise<void>;
@@ -53,86 +56,31 @@ export function EmailProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // -------------------- SEND --------------------
-  const sendToAll = useCallback(async (data: { subject?: string; message: string }) => {
-    try {
-      setLoading(true);
-      await api.post("/emails", data);
-      toast({ title: "Success", description: "Emails sent to all users" });
-      await fetchAllSent();
-      await fetchStats();
-    } catch {
-      toast({ title: "Error", description: "Failed to send emails", variant: "destructive" });
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const sendToCategory = useCallback(async (category: string, data: { subject?: string; message: string }) => {
-    try {
-      setLoading(true);
-      await api.post(`/emails/categories/${category}`, data);
-      toast({ title: "Success", description: `Emails sent to ${category}` });
-      await fetchAllSent();
-      await fetchStats();
-    } catch {
-      toast({ title: "Error", description: "Failed to send emails", variant: "destructive" });
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const sendToIndividual = useCallback(async (id: string, data: { subject?: string; message: string }) => {
-    try {
-      setLoading(true);
-      await api.post(`/emails/${id}`, data);
-      toast({ title: "Success", description: "Email sent to individual" });
-      await fetchAllSent();
-      await fetchStats();
-    } catch {
-      toast({ title: "Error", description: "Failed to send email", variant: "destructive" });
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   // -------------------- GET --------------------
   const fetchAllSent = useCallback(async () => {
     try {
       setLoading(true);
       const res = await api.get("/emails/sent");
-      setEmails(res.data);
+      const emailData = res.data.data || res.data;
+      const mapped = (Array.isArray(emailData) ? emailData : []).map((e: any) => ({
+        ...e,
+        id: e._id || e.id,
+        emailRecordId: e._id || e.id || e.emailRecordId
+      }));
+      setEmails(mapped);
       setError(null);
-    } catch {
-      setError("Failed to fetch emails");
-      toast({ title: "Error", description: "Failed to fetch emails", variant: "destructive" });
-    } finally {
-      setLoading(false);
-    }
-  }, [toast]);
-
-  const fetchByCategory = useCallback(async (category: string) => {
-    try {
-      setLoading(true);
-      const res = await api.get(`/emails/sent/category/${category}`);
-      setEmails(res.data);
-      setError(null);
-    } catch {
-      setError("Failed to fetch category emails");
-      toast({ title: "Error", description: "Failed to fetch category emails", variant: "destructive" });
-    } finally {
-      setLoading(false);
-    }
-  }, [toast]);
-
-  const fetchById = useCallback(async (id: string): Promise<SentEmail | null> => {
-    try {
-      setLoading(true);
-      const res = await api.get(`/emails/sent/${id}`);
-      return res.data;
-    } catch {
-      toast({ title: "Error", description: "Failed to fetch email", variant: "destructive" });
-      return null;
+    } catch (error: any) {
+      // Don't let 401 errors from this endpoint trigger logout
+      // Just show error and set empty array
+      if (error.response?.status === 401) {
+        setEmails([]);
+        setError("Access denied. Please check your permissions.");
+        toast({ title: "Access Denied", description: "You don't have permission to view emails", variant: "destructive" });
+      } else {
+        const message = error.response?.data?.message || "Failed to fetch emails";
+        setError(message);
+        toast({ title: "Error", description: message, variant: "destructive" });
+      }
     } finally {
       setLoading(false);
     }
@@ -153,6 +101,138 @@ export function EmailProvider({ children }: { children: ReactNode }) {
     }
   }, [toast]);
 
+  // -------------------- SEND --------------------
+  // Emails are sent asynchronously - API returns immediately with emailRecordId
+  const sendToAll = useCallback(async (data: { subject?: string; message: string }) => {
+    try {
+      setLoading(true);
+      const response = await api.post("/emails", data);
+      // Backend returns: { message, emailRecordId }
+      const result = response.data.data || response.data;
+      const emailRecordId = result.emailRecordId || result._id;
+      const message = result.message || "Emails are being sent. This may take a few moments.";
+
+      toast({
+        title: "Success",
+        description: message,
+        duration: 5000
+      });
+
+      // Refresh emails list after a short delay to see the new record
+      setTimeout(() => {
+        fetchAllSent();
+        fetchStats();
+      }, 2000);
+
+      return { emailRecordId, message };
+    } catch (error: any) {
+      const message = error.response?.data?.message || "Failed to send emails";
+      toast({ title: "Error", description: message, variant: "destructive" });
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  }, [toast, fetchAllSent, fetchStats]);
+
+  const sendToCategory = useCallback(async (category: string, data: { subject?: string; message: string }) => {
+    try {
+      setLoading(true);
+      const response = await api.post(`/emails/categories/${category}`, data);
+      const result = response.data.data || response.data;
+      const emailRecordId = result.emailRecordId || result._id;
+      const message = result.message || `Emails are being sent to ${category}. This may take a few moments.`;
+
+      toast({
+        title: "Success",
+        description: message,
+        duration: 5000
+      });
+
+      setTimeout(() => {
+        fetchAllSent();
+        fetchStats();
+      }, 2000);
+
+      return { emailRecordId, message };
+    } catch (error: any) {
+      const message = error.response?.data?.message || "Failed to send emails";
+      toast({ title: "Error", description: message, variant: "destructive" });
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  }, [toast, fetchAllSent, fetchStats]);
+
+  const sendToIndividual = useCallback(async (id: string, data: { subject?: string; message: string }) => {
+    try {
+      setLoading(true);
+      const response = await api.post(`/emails/${id}`, data);
+      const result = response.data.data || response.data;
+      const emailRecordId = result.emailRecordId || result._id;
+      const message = result.message || "Email is being sent. This may take a few moments.";
+
+      toast({
+        title: "Success",
+        description: message,
+        duration: 5000
+      });
+
+      setTimeout(() => {
+        fetchAllSent();
+        fetchStats();
+      }, 2000);
+
+      return { emailRecordId, message };
+    } catch (error: any) {
+      const message = error.response?.data?.message || "Failed to send email";
+      toast({ title: "Error", description: message, variant: "destructive" });
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  }, [toast, fetchAllSent, fetchStats]);
+
+  const fetchByCategory = useCallback(async (category: string) => {
+    try {
+      setLoading(true);
+      const res = await api.get(`/emails/sent/category/${category}`);
+      setEmails(res.data);
+      setError(null);
+    } catch {
+      setError("Failed to fetch category emails");
+      toast({ title: "Error", description: "Failed to fetch category emails", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]);
+
+  const fetchById = useCallback(async (id: string): Promise<SentEmail | null> => {
+    try {
+      setLoading(true);
+      const res = await api.get(`/emails/sent/${id}`);
+      const emailData = res.data.data || res.data;
+      return emailData;
+    } catch (error: any) {
+      const message = error.response?.data?.message || "Failed to fetch email";
+      toast({ title: "Error", description: message, variant: "destructive" });
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]);
+
+  // Check email status by emailRecordId
+  const checkEmailStatus = useCallback(async (emailRecordId: string): Promise<SentEmail | null> => {
+    try {
+      const res = await api.get(`/emails/sent/${emailRecordId}`);
+      const emailData = res.data.data || res.data;
+      return emailData;
+    } catch (error: any) {
+      console.error("Failed to check email status:", error);
+      return null;
+    }
+  }, []);
+
   // -------------------- VALUE --------------------
   const value: EmailContextType = {
     emails,
@@ -165,6 +245,7 @@ export function EmailProvider({ children }: { children: ReactNode }) {
     fetchAllSent,
     fetchByCategory,
     fetchById,
+    checkEmailStatus,
     fetchStats,
   };
 

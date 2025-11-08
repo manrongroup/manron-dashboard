@@ -11,6 +11,7 @@ interface RealEstateTableProps {
     onDelete: (id: string) => void;
     onEdit: (property: Property) => void;
     onCreate?: () => void;
+    onView?: (property: Property) => void;
 }
 
 const RealEstateTable: React.FC<RealEstateTableProps> = ({
@@ -18,12 +19,16 @@ const RealEstateTable: React.FC<RealEstateTableProps> = ({
     onDelete,
     onEdit,
     onCreate,
+    onView,
 }) => {
     const [selectedProperties, setSelectedProperties] = useState<Property[]>([]);
 
-    const handleRowClick = useCallback((row: Property) => {
-        console.log("Row clicked:", row);
-    }, []);
+    const handleRowClick = useCallback((row: any) => {
+        if (onView) {
+            const property = row.original || row;
+            onView(property);
+        }
+    }, [onView]);
 
     const handleRowSelect = useCallback((rows: Property[]) => {
         setSelectedProperties(rows);

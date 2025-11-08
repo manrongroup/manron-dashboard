@@ -27,14 +27,18 @@ interface BlogsTableProps {
   onDelete: (id: string) => void;
   onEdit: (blog: Blog) => void;
   onCreate?: () => void;
+  onView?: (blog: Blog) => void;
 }
 
-const BlogsTable: React.FC<BlogsTableProps> = ({ blogs, onDelete, onEdit, onCreate }) => {
+const BlogsTable: React.FC<BlogsTableProps> = ({ blogs, onDelete, onEdit, onCreate, onView }) => {
   const [selectedBlogs, setSelectedBlogs] = useState<Blog[]>([]);
 
-  const handleRowClick = useCallback((row: Blog) => {
-    console.log("Blog clicked:", row);
-  }, []);
+  const handleRowClick = useCallback((row: any) => {
+    if (onView) {
+      const blog = row.original || row;
+      onView(blog);
+    }
+  }, [onView]);
 
   const handleRowSelect = useCallback((rows: Blog[]) => {
     setSelectedBlogs(rows);

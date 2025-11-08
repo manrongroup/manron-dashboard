@@ -45,20 +45,28 @@ export default function EmailManagement() {
 
     setLoading(true);
     try {
+      let result;
       if (sendMode === "all") {
-        await sendToAll({ subject, message });
+        result = await sendToAll({ subject, message });
       } else if (sendMode === "category") {
-        await sendToCategory(selectedCategory, { subject, message });
+        result = await sendToCategory(selectedCategory, { subject, message });
       } else if (sendMode === "individual" && selectedUser) {
-        await sendToIndividual(selectedUser, { subject, message });
+        result = await sendToIndividual(selectedUser, { subject, message });
       }
-      toast({ title: "Success", description: "Email sent successfully!" });
+
+      // Email is sent asynchronously - backend returns immediately with emailRecordId
+      toast({
+        title: "Success",
+        description: result?.message || "Emails are being sent. This may take a few moments.",
+        duration: 5000
+      });
       setIsSendDialogOpen(false);
       setSubject("");
       setMessage("");
       setSelectedUser("");
-    } catch {
-      toast({ title: "Error", description: "Failed to send email", variant: "destructive" });
+    } catch (error: any) {
+      const message = error.response?.data?.message || "Failed to send email";
+      toast({ title: "Error", description: message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -68,12 +76,11 @@ export default function EmailManagement() {
   const stats = {
     total: emails.length,
     sent: emails.filter((e) => e.status === "sent").length,
+    processing: emails.filter((e) => e.status === "processing").length,
     failed: emails.filter((e) => e.status === "failed").length,
-    categories: [...new Set(emails.map((e) => e.category))].length,
+    categories: [...new Set(emails.map((e) => e.category || "all"))].length,
   };
 
-  console.log("agents", agents)
-  console.log("users:", users)
   return (
     <div className="space-y-6">
       {/* Header */}

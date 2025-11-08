@@ -7,12 +7,13 @@ import { DataTable } from "../ui/data-table";
 
 interface SentEmail {
   _id: string;
+  id?: string;
   subject: string;
   message: string;
   recipients: string[];
-  status: "sent" | "failed";
-  category: string;
-  sentBy: string;
+  status: "processing" | "sent" | "failed";
+  category?: string;
+  sentBy?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -26,9 +27,12 @@ interface EmailTableProps {
 const EmailTable: React.FC<EmailTableProps> = ({ emails, onDelete, onView }) => {
   const [selectedEmails, setSelectedEmails] = useState<SentEmail[]>([]);
 
-  const handleRowClick = useCallback((row: SentEmail) => {
-    console.log("Email clicked:", row);
-  }, []);
+  const handleRowClick = useCallback((row: any) => {
+    if (onView) {
+      const email = row.original || row;
+      onView(email);
+    }
+  }, [onView]);
 
   const handleRowSelect = useCallback((rows: SentEmail[]) => {
     setSelectedEmails(rows);
@@ -71,12 +75,14 @@ const EmailTable: React.FC<EmailTableProps> = ({ emails, onDelete, onView }) => 
       header: "Status",
       cell: ({ row }: any) => {
         const status = row.getValue("status");
+        const statusColors = {
+          sent: "bg-green-100 text-green-800",
+          processing: "bg-yellow-100 text-yellow-800",
+          failed: "bg-red-100 text-red-800"
+        };
         return (
           <span
-            className={`px-2 py-1 rounded-full text-xs font-medium ${status === "sent"
-              ? "bg-green-100 text-green-800"
-              : "bg-red-100 text-red-800"
-              }`}
+            className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[status as keyof typeof statusColors] || "bg-gray-100 text-gray-800"}`}
           >
             {status}
           </span>
@@ -87,7 +93,7 @@ const EmailTable: React.FC<EmailTableProps> = ({ emails, onDelete, onView }) => 
       accessorKey: "category",
       header: "Category",
       cell: ({ row }: any) => (
-        <span className="text-sm">{row.getValue("category")}</span>
+        <span className="text-sm">{row.getValue("category") || "all"}</span>
       ),
     },
     {
@@ -139,7 +145,7 @@ const EmailTable: React.FC<EmailTableProps> = ({ emails, onDelete, onView }) => 
               variant="ghost"
               size="sm"
               className="text-red-600 hover:text-red-700"
-              onClick={() => onDelete(email._id)}
+              onClick={() => onDelete(email._id || email.id)}
             >
               <Trash2 className="h-4 w-4 mr-1" /> Delete
             </Button>

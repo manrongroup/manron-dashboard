@@ -4,20 +4,28 @@ import React, { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Edit, Trash2, Shield, Mail, Plus } from 'lucide-react';
 import { DataTable } from '../ui/data-table';
-import { User as UserType } from '@/types';
+import { User as UserType, Agent } from '@/types';
 
 interface UsersTableProps {
-  users: UserType[];
-  onEdit: (user: UserType) => void;
-  onDelete: (user: UserType) => void;
-  onEmail?: (user: UserType) => void;
+  users: (UserType | Agent)[];
+  onEdit: (user: UserType | Agent) => void;
+  onDelete: (user: UserType | Agent) => void;
+  onEmail?: (user: UserType | Agent) => void;
   onCreate?: () => void;
+  onView?: (user: UserType | Agent) => void;
 }
 
-const UsersTable: React.FC<UsersTableProps> = ({ users, onEdit, onDelete, onEmail, onCreate }) => {
-  const [selectedUsers, setSelectedUsers] = useState<UserType[]>([]);
+const UsersTable: React.FC<UsersTableProps> = ({ users, onEdit, onDelete, onEmail, onCreate, onView }) => {
+  const [selectedUsers, setSelectedUsers] = useState<(UserType | Agent)[]>([]);
 
-  const handleRowSelect = useCallback((rows: UserType[]) => {
+  const handleRowClick = useCallback((row: any) => {
+    if (onView) {
+      const user = row.original || row;
+      onView(user);
+    }
+  }, [onView]);
+
+  const handleRowSelect = useCallback((rows: (UserType | Agent)[]) => {
     setSelectedUsers(rows);
   }, []);
 
@@ -65,11 +73,19 @@ const UsersTable: React.FC<UsersTableProps> = ({ users, onEdit, onDelete, onEmai
       accessorKey: 'role',
       header: 'Role',
       cell: ({ row }: any) => {
-        const role = row.getValue('role') || "Agent";
+        const role = row.getValue('role') || '';
+        const roleColors: Record<string, string> = {
+          superAdmin: 'bg-purple-100 text-purple-800',
+          admin: 'bg-blue-100 text-blue-800',
+          client: 'bg-green-100 text-green-800',
+          agent: 'bg-orange-100 text-orange-800'
+        };
         return (
           <div className="flex items-center gap-1">
-            {role === 'superAdmin' ? <Shield className="h-4 w-4" /> : <div className="h-4 w-4"></div>}
-            <span>{role}</span>
+            {role === 'superAdmin' && <Shield className="h-4 w-4 text-purple-600" />}
+            <span className={`px-2 py-1 rounded-full text-xs font-medium ${roleColors[role] || 'bg-gray-100 text-gray-800'}`}>
+              {role || 'N/A'}
+            </span>
           </div>
         );
       },
@@ -88,7 +104,7 @@ const UsersTable: React.FC<UsersTableProps> = ({ users, onEdit, onDelete, onEmai
       id: 'actions',
       header: 'Actions',
       cell: ({ row }: any) => {
-        const user = row.original as UserType;
+        const user = row.original as UserType | Agent;
         return (
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" onClick={() => onEdit(user)}>
@@ -140,6 +156,7 @@ const UsersTable: React.FC<UsersTableProps> = ({ users, onEdit, onDelete, onEmai
           pageSizeOptions: [5, 10, 20],
         }}
         onRowSelect={handleRowSelect}
+        onRowClick={handleRowClick}
         customActions={onCreate ? [
           {
             label: "Add User",

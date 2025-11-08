@@ -4,31 +4,29 @@ import React, { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Edit, Trash2 } from "lucide-react";
 import { DataTable } from "../ui/data-table";
-
-interface Subscriber {
-  _id: string;
-  email: string;
-  status: "active" | "inactive";
-  createdAt: string;
-  updatedAt?: string;
-}
+import { Subscriber } from "@/types";
 
 interface SubscribersTableProps {
   subscribers: Subscriber[];
   onDelete: (id: string) => void;
   onEdit: (subscriber: Subscriber) => void;
+  onView?: (subscriber: Subscriber) => void;
 }
 
 const SubscribersTable: React.FC<SubscribersTableProps> = ({
   subscribers,
   onDelete,
   onEdit,
+  onView,
 }) => {
   const [selectedSubs, setSelectedSubs] = useState<Subscriber[]>([]);
 
-  const handleRowClick = useCallback((row: Subscriber) => {
-    console.log("Subscriber clicked:", row);
-  }, []);
+  const handleRowClick = useCallback((row: any) => {
+    if (onView) {
+      const subscriber = row.original || row;
+      onView(subscriber);
+    }
+  }, [onView]);
 
   const handleRowSelect = useCallback((rows: Subscriber[]) => {
     setSelectedSubs(rows);
